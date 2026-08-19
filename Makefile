@@ -1,5 +1,9 @@
-PFM2_VERSION_NUMBER=2.22p1
-PFM2_VERSION:=\"${PFM2_VERSION_NUMBER}\"
+# File name component, must not contain spaces: it ends up in build paths.
+PFM2_VERSION_NUMBER=3.00alpha
+# What the firmware displays. May contain spaces.
+PFM2_VERSION_DISPLAY=3.00 alpha
+# Single quoted so the shell hands the compiler one argument, spaces included.
+PFM2_VERSION:='"${PFM2_VERSION_DISPLAY}"'
 
 # Define you GCCPATH HERE
 #GCC_PATH:=/home/xavier/git/preenfm2/gcc-arm-none-eabi-4_7-2014q2/bin

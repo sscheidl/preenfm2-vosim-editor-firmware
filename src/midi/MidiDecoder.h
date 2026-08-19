@@ -143,7 +143,7 @@ struct Nrpn {
 };
 
 
-// Editor remote protocol (firmware 2.22p1 and later).
+// Editor remote protocol (firmware 3.00 alpha and later).
 // It lives on NRPN MSB page 4, which decodeNrpn() has always ignored: page 0/1 hold the
 // synth parameters, page 2/3 the step sequencers, and 127/127 requests the full dump.
 // Older firmwares therefore drop every command below without any side effect.

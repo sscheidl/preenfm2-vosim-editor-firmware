@@ -719,7 +719,7 @@ void MidiDecoder::sendCurrentPatchAsNrpns(int timbre) {
 
 
 // ---------------------------------------------------------------------------
-// Editor remote protocol, see release/editor-protocol-2.22p1/EDITOR_PROTOCOL.md
+// Editor remote protocol, see release/editor-protocol-3.00alpha/EDITOR_PROTOCOL.md
 //
 // controlChange() is called once per timbre the incoming midi channel maps to, so a
 // command must be executed once per midi event only, and a store must additionally

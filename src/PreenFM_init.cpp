@@ -22,7 +22,7 @@ extern LiquidCrystal lcd;
 extern int32_t dmaSampleBuffer[128];
 
 const char* line1 = "preenfm2 v"PFM2_VERSION""CVIN_STRING;
-const char* line2 = "     By Xavier Hosxe";
+const char* line2 = "  By Hosxe & tAUREON";
 const char* line3 = "          24bits DAC";
 
 
