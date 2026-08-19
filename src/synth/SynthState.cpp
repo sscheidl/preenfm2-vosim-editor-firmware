@@ -1488,6 +1488,9 @@ void SynthState::loadPreenFMPatchFromMidi(int timbre, int bank, int bankLSB, int
         if (bank->fileType != FILE_EMPTY) {
             fullState.preenFMBankNumber = bankLSB;
             fullState.preenFMPresetNumber = patchNumber;
+            // Keep the bank pointer in sync with the numbers, otherwise the remembered
+            // position stays incomplete after a program change.
+            fullState.preenFMBank = bank;
             loadPreenFMPatch(timbre, bank, patchNumber, params);
         }
     }

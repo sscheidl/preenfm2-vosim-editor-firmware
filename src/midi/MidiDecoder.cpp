@@ -43,7 +43,10 @@ MidiDecoder::MidiDecoder() {
         omniOn[t] = false;
         bankNumber[t] = 0;
         bankNumberLSB[t] = 0;
+        editorValueMsbSeen[t] = false;
     }
+    this->currentEventTimbreCount = 0;
+    this->editorCommandDoneThisEvent = false;
 
     usbBufRead = usbBuf;
     usbBufWrite = usbBuf;
@@ -240,6 +243,11 @@ void MidiDecoder::midiEventReceived(MidiEvent midiEvent) {
         // No accurate channel
         return;
     }
+
+    // The editor protocol needs to know whether this event addresses exactly one timbre,
+    // and must run its command once per event instead of once per addressed timbre.
+    this->currentEventTimbreCount = timbreIndex;
+    this->editorCommandDoneThisEvent = false;
 
 
     switch (midiEvent.eventType) {
@@ -564,12 +572,15 @@ void MidiDecoder::controlChange(int timbre, MidiEvent& midiEvent) {
         switch (midiEvent.value[0]) {
         case 99:
             this->currentNrpn[timbre].paramMSB = midiEvent.value[1];
+            // A new nrpn starts here, the value bytes of the previous one are stale.
+            this->editorValueMsbSeen[timbre] = false;
             break;
         case 98:
             this->currentNrpn[timbre].paramLSB = midiEvent.value[1];
             break;
         case 6:
             this->currentNrpn[timbre].valueMSB = midiEvent.value[1];
+            this->editorValueMsbSeen[timbre] = true;
             break;
         case 38:
             this->currentNrpn[timbre].valueLSB = midiEvent.value[1];
@@ -706,6 +717,151 @@ void MidiDecoder::sendCurrentPatchAsNrpns(int timbre) {
 
 }
 
+
+// ---------------------------------------------------------------------------
+// Editor remote protocol, see release/editor-protocol-2.22p1/EDITOR_PROTOCOL.md
+//
+// controlChange() is called once per timbre the incoming midi channel maps to, so a
+// command must be executed once per midi event only, and a store must additionally
+// require that mapping to be unambiguous.
+// ---------------------------------------------------------------------------
+
+void MidiDecoder::editorSendResponse(int timbre, unsigned char responseLSB, unsigned int value) {
+    struct MidiEvent cc;
+    cc.eventType = MIDI_CONTROL_CHANGE;
+    // Same channel choice as sendCurrentPatchAsNrpns() : ALL is reported on channel 1.
+    int channel = this->synthState->fullState.midiConfigValue[MIDICONFIG_CHANNEL1 + timbre] - 1;
+    if (channel == -1) {
+        channel = 0;
+    }
+    cc.channel = channel;
+
+    cc.value[0] = 99;
+    cc.value[1] = EDITOR_NRPN_PAGE;
+    sendMidiCCOut(&cc, false);
+    cc.value[0] = 98;
+    cc.value[1] = responseLSB;
+    sendMidiCCOut(&cc, false);
+    cc.value[0] = 6;
+    cc.value[1] = (unsigned char) ((value >> 7) & 0x7f);
+    sendMidiCCOut(&cc, false);
+    cc.value[0] = 38;
+    cc.value[1] = (unsigned char) (value & 0x7f);
+    sendMidiCCOut(&cc, false);
+
+    flushMidiOut();
+    // Wait for midi to be flushed
+    while (usartBufferOut.getCount()>0) {}
+}
+
+void MidiDecoder::editorSendPosition(int timbre) {
+    const struct PFM2File* bank = this->synthState->fullState.preenFMBank;
+    // The position is only meaningful once a preenfm patch bank has actually been
+    // selected, either from the menu or by a program change on an existing bank.
+    bool valid = (bank != 0) && (bank->fileType != FILE_EMPTY);
+
+    editorSendResponse(timbre, EDITOR_RSP_POSITION_BANKTYPE, EDITOR_BANKTYPE_PREENFM_PATCH);
+    editorSendResponse(timbre, EDITOR_RSP_POSITION_BANK, this->synthState->fullState.preenFMBankNumber);
+    editorSendResponse(timbre, EDITOR_RSP_POSITION_PRESET, this->synthState->fullState.preenFMPresetNumber);
+    editorSendResponse(timbre, EDITOR_RSP_POSITION_VALID, valid ? 1 : 0);
+}
+
+void MidiDecoder::editorStore(int timbre, unsigned int target) {
+    unsigned int targetBank = target >> 7;
+    unsigned int targetPreset = target & 0x7f;
+
+    // A slot outside the addressable range can never be written. Every preenfm patch bank
+    // holds exactly 128 presets, so only the bank index can leave the range here.
+    if (targetBank >= NUMBEROFPREENFMBANKS || targetPreset >= 128) {
+        editorSendResponse(timbre, EDITOR_RSP_STORE_TARGET, target);
+        editorSendResponse(timbre, EDITOR_RSP_STORE_STATUS, EDITOR_STATUS_INVALID_TARGET);
+        return;
+    }
+
+    // Only regular preenfm patch banks are writable. getFile() returns an errorFile with
+    // FILE_EMPTY for every index outside the banks actually present, and a read only bank
+    // reports FILE_READ_ONLY, so neither can be silently replaced by another target.
+    const struct PFM2File* bank = storage->getPatchBank()->getFile(targetBank);
+    if (bank == 0 || bank->fileType != FILE_OK) {
+        editorSendResponse(timbre, EDITOR_RSP_STORE_TARGET, target);
+        editorSendResponse(timbre, EDITOR_RSP_STORE_STATUS, EDITOR_STATUS_BANK_NOT_FOUND);
+        return;
+    }
+
+    struct OneSynthParams* params = this->synth->getTimbre(timbre)->getParamRaw();
+    if (params == 0) {
+        // Cannot happen with the current Timbre implementation, kept so a future change
+        // can never silently write an unrelated buffer.
+        editorSendResponse(timbre, EDITOR_RSP_STORE_TARGET, target);
+        editorSendResponse(timbre, EDITOR_RSP_STORE_STATUS, EDITOR_STATUS_PROTOCOL_ERROR);
+        return;
+    }
+
+    // The target slot is never read before writing : the edit buffer of the addressed
+    // timbre is stored as is, preset name included. No other timbre is touched.
+    int result = storage->getPatchBank()->savePreenFMPatch(bank, targetPreset, params);
+
+    if (result != COMMAND_SUCCESS) {
+        editorSendResponse(timbre, EDITOR_RSP_STORE_TARGET, target);
+        editorSendResponse(timbre, EDITOR_RSP_STORE_STATUS, EDITOR_STATUS_STORAGE_ERROR);
+        return;
+    }
+
+    // The write succeeded, only now the remembered position is moved to the new slot.
+    // No error path above ever falls back to bank 0 / preset 0 or to the current position.
+    this->synthState->fullState.preenFMBankNumber = targetBank;
+    this->synthState->fullState.preenFMPresetNumber = targetPreset;
+    this->synthState->fullState.preenFMBank = bank;
+
+    editorSendResponse(timbre, EDITOR_RSP_STORE_TARGET, target);
+    editorSendResponse(timbre, EDITOR_RSP_STORE_STATUS, EDITOR_STATUS_OK);
+}
+
+void MidiDecoder::editorCommandReceived(int timbre) {
+    if (this->editorCommandDoneThisEvent) {
+        // Already handled for another timbre of the very same midi event.
+        return;
+    }
+    this->editorCommandDoneThisEvent = true;
+
+    unsigned int value = ((unsigned int)this->currentNrpn[timbre].valueMSB << 7)
+            + (unsigned int)this->currentNrpn[timbre].valueLSB;
+
+    switch (this->currentNrpn[timbre].paramLSB) {
+    case EDITOR_REQ_CAPABILITY:
+        editorSendResponse(timbre, EDITOR_RSP_PROTOCOL_VERSION, EDITOR_PROTOCOL_VERSION);
+        editorSendResponse(timbre, EDITOR_RSP_CAPABILITIES, EDITOR_CAPABILITIES);
+        break;
+    case EDITOR_REQ_POSITION:
+        editorSendPosition(timbre);
+        break;
+    case EDITOR_REQ_STORE:
+        // A store must address exactly one timbre. Omni, the global channel or several
+        // timbres sharing one midi channel would otherwise write the same slot repeatedly.
+        if (this->currentEventTimbreCount != 1) {
+            editorSendResponse(timbre, EDITOR_RSP_STORE_TARGET, value);
+            editorSendResponse(timbre, EDITOR_RSP_STORE_STATUS, EDITOR_STATUS_AMBIGUOUS_CHANNEL);
+            break;
+        }
+        // Without a fresh CC6 the value msb is left over from an earlier nrpn, which would
+        // address an unrelated bank. An incomplete sequence must never write anything.
+        if (!this->editorValueMsbSeen[timbre]) {
+            editorSendResponse(timbre, EDITOR_RSP_STORE_STATUS, EDITOR_STATUS_PROTOCOL_ERROR);
+            break;
+        }
+        editorStore(timbre, value);
+        break;
+    default:
+        if (this->currentNrpn[timbre].paramLSB < EDITOR_RSP_PROTOCOL_VERSION) {
+            // Unknown command inside the request range.
+            editorSendResponse(timbre, EDITOR_RSP_STORE_STATUS, EDITOR_STATUS_PROTOCOL_ERROR);
+        }
+        // paramLSB >= EDITOR_RSP_PROTOCOL_VERSION is one of our own responses fed back into
+        // the input by midi thru or by the editor. Answering it would create a midi loop.
+        break;
+    }
+}
+
 void MidiDecoder::decodeNrpn(int timbre) {
     if (this->currentNrpn[timbre].paramMSB < 2) {
         unsigned int index = (this->currentNrpn[timbre].paramMSB << 7) + this->currentNrpn[timbre].paramLSB;
@@ -738,6 +894,8 @@ void MidiDecoder::decodeNrpn(int timbre) {
         this->synth->setNewStepValueFromMidi(timbre, whichStepSeq, step, value);
     } else if (this->currentNrpn[timbre].paramMSB == 127 && this->currentNrpn[timbre].paramLSB == 127)  {
         sendCurrentPatchAsNrpns(timbre);
+    } else if (this->currentNrpn[timbre].paramMSB == EDITOR_NRPN_PAGE)  {
+        editorCommandReceived(timbre);
     }
 }
 

@@ -18,7 +18,8 @@ public:
 
 	void create(const char* name);
 	const struct PFM2File* addEmptyBank(const char* newBankName);
-	void savePreenFMPatch(const struct PFM2File* bank, int patchNumber, const struct OneSynthParams *params);
+	// Returns COMMAND_SUCCESS when the patch has really been written to the usb key.
+	int savePreenFMPatch(const struct PFM2File* bank, int patchNumber, const struct OneSynthParams *params);
     void setArpeggiatorPartOfThePreset(short *pointer) { arpeggiatorPartOfThePreset = pointer; }
     void loadPreenFMPatch(const struct PFM2File* bank, int patchNumber, struct OneSynthParams *params);
     const char* loadPreenFMPatchName(const struct PFM2File* bank, int patchNumber);

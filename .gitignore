@@ -17,3 +17,6 @@ linker/startup_stm32f4xx.lst
 *.zip
 gcc-arm**/**
 
+
+# build helper written by the Makefile
+.binfirmware

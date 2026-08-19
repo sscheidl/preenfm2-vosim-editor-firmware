@@ -143,6 +143,51 @@ struct Nrpn {
 };
 
 
+// Editor remote protocol (firmware 2.22p1 and later).
+// It lives on NRPN MSB page 4, which decodeNrpn() has always ignored: page 0/1 hold the
+// synth parameters, page 2/3 the step sequencers, and 127/127 requests the full dump.
+// Older firmwares therefore drop every command below without any side effect.
+#define EDITOR_NRPN_PAGE 4
+
+enum EditorProtocolRequest {
+    EDITOR_REQ_CAPABILITY = 0,
+    EDITOR_REQ_POSITION = 1,
+    EDITOR_REQ_STORE = 2
+};
+
+// Responses use a disjoint LSB range, so a reply looped back into the input
+// (midi thru, editor echo) can never be decoded as a request again.
+enum EditorProtocolResponse {
+    EDITOR_RSP_PROTOCOL_VERSION = 64,
+    EDITOR_RSP_CAPABILITIES = 65,
+    EDITOR_RSP_POSITION_BANKTYPE = 66,
+    EDITOR_RSP_POSITION_BANK = 67,
+    EDITOR_RSP_POSITION_PRESET = 68,
+    EDITOR_RSP_POSITION_VALID = 69,
+    EDITOR_RSP_STORE_STATUS = 70,
+    EDITOR_RSP_STORE_TARGET = 71
+};
+
+enum EditorProtocolStatus {
+    EDITOR_STATUS_OK = 0,
+    EDITOR_STATUS_BANK_NOT_FOUND = 1,
+    EDITOR_STATUS_INVALID_TARGET = 2,
+    EDITOR_STATUS_AMBIGUOUS_CHANNEL = 3,
+    EDITOR_STATUS_STORAGE_ERROR = 4,
+    EDITOR_STATUS_PROTOCOL_ERROR = 5
+};
+
+#define EDITOR_PROTOCOL_VERSION 1
+// Bit 0 : direct store supported, bit 1 : position query supported
+#define EDITOR_CAPABILITY_STORE 0x01
+#define EDITOR_CAPABILITY_POSITION_QUERY 0x02
+#define EDITOR_CAPABILITIES (EDITOR_CAPABILITY_STORE | EDITOR_CAPABILITY_POSITION_QUERY)
+
+// Bank type 0 is the regular preenfm patch bank. Combo and DX7 banks are not writable
+// through this protocol and are never reported as a store target.
+#define EDITOR_BANKTYPE_PREENFM_PATCH 0
+
+
 
 
 
@@ -178,6 +223,12 @@ public:
     void newTimbre(int timbre) { currentTimbre = timbre; }
     void sendCurrentPatchAsNrpns(int timbre);
 
+    // Editor remote protocol
+    void editorCommandReceived(int timbre);
+    void editorStore(int timbre, unsigned int target);
+    void editorSendResponse(int timbre, unsigned char responseLSB, unsigned int value);
+    void editorSendPosition(int timbre);
+
     // Sysex sender
     void sendSysexByte(uint8_t byte);
     void sendSysexFinished();
@@ -198,6 +249,13 @@ private:
     struct MidiEvent toSend ;
     struct MidiEvent lastSentCC;
     struct Nrpn currentNrpn[NUMBER_OF_TIMBRES];
+    // Number of timbres the midi event being dispatched maps to, plus a guard so one
+    // editor command is executed once per midi event and not once per addressed timbre.
+    int currentEventTimbreCount;
+    bool editorCommandDoneThisEvent;
+    // Set when CC6 of the current nrpn sequence has been received, cleared by CC99.
+    // A store is only executed on a complete 99/98/6/38 sequence.
+    bool editorValueMsbSeen[NUMBER_OF_TIMBRES];
     bool omniOn[NUMBER_OF_TIMBRES];
     unsigned char runningStatus;
 

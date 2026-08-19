@@ -91,7 +91,7 @@ const char* PatchBank::loadPreenFMPatchName(const struct PFM2File* bank, int pat
     return presetName;
 }
 
-void PatchBank::savePreenFMPatch(const struct PFM2File* bank, int patchNumber, const struct OneSynthParams *params) {
+int PatchBank::savePreenFMPatch(const struct PFM2File* bank, int patchNumber, const struct OneSynthParams *params) {
 	const char* fullBankName = getFullName(bank->name);
 
     char zeros[ALIGNED_PATCH_ZERO];
@@ -101,10 +101,16 @@ void PatchBank::savePreenFMPatch(const struct PFM2File* bank, int patchNumber, c
 	convertParamsToMemory(params, &reachableFlashParam, *arpeggiatorPartOfThePreset > 0);
 
     // Save patch
-    save(fullBankName, patchNumber * ALIGNED_PATCH_SIZE,  (void*)&reachableFlashParam, PFM_PATCH_SIZE);
+    int result = save(fullBankName, patchNumber * ALIGNED_PATCH_SIZE,  (void*)&reachableFlashParam, PFM_PATCH_SIZE);
 
     // Add zeros
-    save(fullBankName, patchNumber * ALIGNED_PATCH_SIZE  + PFM_PATCH_SIZE,  (void*)zeros, ALIGNED_PATCH_ZERO);
+    int resultZeros = save(fullBankName, patchNumber * ALIGNED_PATCH_SIZE  + PFM_PATCH_SIZE,  (void*)zeros, ALIGNED_PATCH_ZERO);
+
+    // Both writes must have succeeded for the slot to hold a complete patch.
+    if (result != COMMAND_SUCCESS) {
+        return result;
+    }
+    return resultZeros;
 }
 
 
