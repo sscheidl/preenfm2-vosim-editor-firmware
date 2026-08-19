@@ -835,7 +835,7 @@
 08059034 0000006e T _ZN11MidiDecoder14newMessageTypeEh
 080590a4 00000114 T _ZN11MidiDecoder13sendMidiCCOutEP9MidiEventb
 080591b8 0000007c T _ZN11MidiDecoder12flushMidiOutEv
-08059234 0000009c t _ZN11MidiDecoder13sendMidiCCOutEP9MidiEventb.constprop.4	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/midi/MidiDecoder.cpp:1162
+08059234 0000009c t _ZN11MidiDecoder13sendMidiCCOutEP9MidiEventb.constprop.4	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/midi/MidiDecoder.cpp:1176
 080592d0 00000114 T _ZN11MidiDecoder18editorSendResponseEihj
 080593e4 000000ee T _ZN11MidiDecoder11editorStoreEij
 080594d4 00000424 T _ZN11MidiDecoder23sendCurrentPatchAsNrpnsEi
@@ -843,652 +843,652 @@
 08059f08 00000160 T _ZN11MidiDecoder18editorSendPositionEi
 0805a068 0000009c T _ZN11MidiDecoder21editorCommandReceivedEi
 0805a104 0000010c T _ZN11MidiDecoder10decodeNrpnEi
-0805a210 00000b48 T _ZN11MidiDecoder13controlChangeEiR9MidiEvent
-0805ad58 00000556 T _ZN11MidiDecoder17midiEventReceivedE9MidiEvent
-0805b2b0 00000026 T _ZN11MidiDecoder14newMessageDataEh
-0805b2d8 00000334 T _ZN11MidiDecoder7newByteEh
-0805b60c 0000001a T _ZN11MidiDecoder22getNrpnRowFromParamRowEi
-0805b628 00000018 T _ZN11MidiDecoder22getParamRowFromNrpnRowEi
-0805b640 0000018c T _ZN3Env4initEP15EnvelopeParamsAP15EnvelopeParamsBhPf
-0805b7cc 0000000c W _ZN3LfoD1Ev	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Lfo.h:36
-0805b7cc 0000000c W _ZN3LfoD2Ev
-0805b7d8 00000014 W _ZN3LfoD0Ev
-0805b7ec 00000064 T _ZN3Lfo4initEP6Matrix10SourceEnum15DestinationEnum
-0805b850 0000000c T _ZN3LfoC1Ev	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Lfo.cpp:25
-0805b850 0000000c T _ZN3LfoC2Ev
-0805b85c 0000000c W _ZN6LfoEnvD1Ev	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Lfo.h:36
-0805b85c 0000000c W _ZN6LfoEnvD2Ev
-0805b868 00000014 W _ZN6LfoEnvD0Ev
-0805b87c 00000024 T _ZN6LfoEnvC1Ev	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/LfoEnv.cpp:20
-0805b87c 00000024 T _ZN6LfoEnvC2Ev
-0805b8a0 00000098 T _ZN6LfoEnv4initEP14EnvelopeParamsP6Matrix10SourceEnum15DestinationEnum
-0805b938 0000000c W _ZN7LfoEnv2D1Ev	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Lfo.h:36
-0805b938 0000000c W _ZN7LfoEnv2D2Ev
-0805b944 00000014 W _ZN7LfoEnv2D0Ev
-0805b958 00000024 T _ZN7LfoEnv2C1Ev	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/LfoEnv2.cpp:21
-0805b958 00000024 T _ZN7LfoEnv2C2Ev
-0805b980 00000098 T _ZN7LfoEnv24initEP15Envelope2ParamsP6Matrix10SourceEnum15DestinationEnum
-0805ba18 0000029c T _ZN6LfoOsc9midiClockEib
-0805bcb4 00000280 T _ZN6LfoOsc17nextValueInMatrixEv
-0805bf34 00000060 T _ZN6LfoOsc6noteOnEv
-0805bf94 000000d0 T _ZN6LfoOsc4initEP9LfoParamsPfP6Matrix10SourceEnum15DestinationEnum
-0805c064 00000100 T _ZN10LfoStepSeq9midiClockEib
-0805c164 00000040 T _ZN10LfoStepSeq12valueChangedEi
-0805c1a4 000000e4 T _ZN10LfoStepSeq17nextValueInMatrixEv
-0805c288 0000006c T _ZN10LfoStepSeq6noteOnEv
-0805c2f4 00000002 T _ZN10LfoStepSeq7noteOffEv
-0805c2f8 000000f0 T _ZN10LfoStepSeq4initEP19StepSequencerParamsP18StepSequencerStepsP6Matrix10SourceEnum15DestinationEnum
-0805c3e8 00000002 T _ZN6MatrixC1Ev	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Matrix.cpp:22
-0805c3e8 00000002 T _ZN6MatrixC2Ev
-0805c3ec 00000002 T _ZN6MatrixD1Ev	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Matrix.cpp:25
-0805c3ec 00000002 T _ZN6MatrixD2Ev
-0805c3f0 00000006 T _ZN6Matrix4initEP15MatrixRowParams	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Matrix.cpp:29
-0805c3f8 00000298 T _ZN3Osc4initEP10SynthStateP16OscillatorParams15DestinationEnum
-0805c690 0000010c T _ZN3Osc7newNoteEP8OscStateiff
-0805c79c 000000dc T _ZN3Osc11glideToNoteEP8OscStateif
-0805c878 0000001e T _ZN3Osc9glideStepEP8OscStatef
-0805c898 0000000c W _ZN17SynthParamCheckerD1Ev	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/SynthParamChecker.h:25
-0805c898 0000000c W _ZN17SynthParamCheckerD2Ev
-0805c8a4 00000012 W _ZN5Synth25newParamValueFromExternalEiiiP16ParameterDisplayff
-0805c8b8 00000002 W _ZN5Synth13newcurrentRowEii
-0805c8bc 00000002 W _ZN5Synth8showAlgoEv
-0805c8c0 00000002 W _ZN5Synth17showIMInformationEv
-0805c8c4 00000002 W _ZN5Synth12newSynthModeEP9FullState
-0805c8c8 00000006 W _ZThn24_N5Synth12newSynthModeEP9FullState	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Synth.h:182
-0805c8d0 00000002 W _ZN5Synth8menuBackE9MenuStateP9FullState
-0805c8d4 00000006 W _ZThn24_N5Synth8menuBackE9MenuStateP9FullState	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Synth.h:183
-0805c8dc 00000002 W _ZN5Synth12newMenuStateEP9FullState
-0805c8e0 00000006 W _ZThn24_N5Synth12newMenuStateEP9FullState	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Synth.h:184
-0805c8e8 00000016 T _ZN5Synth9newTimbreEi
-0805c900 00000018 W _ZN5Synth8stopNoteEic
-0805c918 0000001a W _ZN5Synth8playNoteEicc
-0805c934 00000014 W _ZN17SynthParamCheckerD0Ev
-0805c948 000000f0 T _ZN5SynthD1Ev	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Synth.cpp:40
-0805c948 000000f0 T _ZN5SynthD2Ev
-0805ca38 00000008 T _ZThn8_N5SynthD1Ev
-0805ca40 00000008 T _ZThn16_N5SynthD1Ev
-0805ca48 00000050 T _ZN5Synth13newMenuSelectEP9FullState
-0805ca98 00000008 T _ZThn24_N5Synth13newMenuSelectEP9FullState
-0805caa0 0000035e T _ZN5Synth19beforeNewParamsLoadEi
-0805ce00 0000038c T _ZN5Synth18afterNewParamsLoadEi
-0805d18c 00000464 T _ZN5Synth17afterNewComboLoadEv
-0805d5f0 000000f8 T _ZN5SynthD0Ev
-0805d6e8 00000008 T _ZThn8_N5SynthD0Ev
-0805d6f0 00000008 T _ZThn16_N5SynthD0Ev
-0805d6f8 000001b4 T _ZN5Synth18checkNewParamValueEiiifPf
-0805d8ac 00000008 T _ZThn16_N5Synth18checkNewParamValueEiiifPf
-0805d8b4 000000d4 T _ZN5SynthC1Ev	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Synth.cpp:37
-0805d8b4 000000d4 T _ZN5SynthC2Ev
-0805d988 00000400 T _ZN5Synth4initEP10SynthState
-0805dd88 00000006 W _ZN5Synth13setSynthStateEP10SynthState
-0805dd90 00000006 W _ZThn8_N5Synth13setSynthStateEP10SynthState	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Synth.h:45
-0805dd98 00000058 T _ZN5Synth18setDacNumberOfBitsEm
-0805ddf0 0000001a T _ZN5Synth6noteOnEicc
-0805de0c 00000014 T _ZN5Synth7noteOffEic
-0805de20 00000014 T _ZN5Synth12setHoldPedalEii
-0805de34 000000c8 T _ZN5Synth10allNoteOffEi
-0805defc 000000a4 T _ZN5Synth11allSoundOffEi
-0805dfa0 0000008e T _ZN5Synth11allSoundOffEv
-0805e030 0000007a T _ZN5Synth9isPlayingEv
-0805e0ac 000005ce T _ZN5Synth19buildNewSampleBlockEv
-0805e67c 000000fc T _ZN5Synth26buildNewSampleBlockMcp4922Ev
-0805e778 00000102 T _ZN5Synth25buildNewSampleBlockCS4344EPl
-0805e87c 00000180 T _ZN5Synth34getNumberOfFreeVoicesForThisTimbreEi
-0805e9fc 00000064 T _ZN5Synth27updateNumberOfActiveTimbresEv
-0805ea60 00000386 T _ZN5Synth12getFreeVoiceEv
-0805ede8 000001e4 T _ZN5Synth20fixMaxNumberOfVoicesEi
-0805efcc 00000b20 T _ZN5Synth13newParamValueEiiiP16ParameterDisplayff
-0805faec 000000f2 T _ZN5Synth17rebuidVoiceTimbreEv
-0805fbe0 000000e4 T _ZN5Synth31getNumberOfFreeOscForThisTimbreEi
-0805fcc4 00000022 T _ZN5Synth24loadPreenFMPatchFromMidiEiiii
-0805fce8 0000023c T _ZN5Synth19setNewValueFromMidiEiiif
-0805ff24 0000010e T _ZN5Synth23setNewStepValueFromMidiEiiii
-08060034 0000001a T _ZN5Synth24setNewSymbolInPresetNameEiii
-08060050 00000006 T _ZN5Synth14setScalaEnableEb
-08060058 00000006 T _ZN5Synth13setScalaScaleEi
-08060060 0000000e T _ZN5Synth20setCurrentInstrumentEi
-08060070 00000028 T _ZN5Synth28updateGlobalTuningFromConfigEv
-08060098 00000048 W _ZN10SynthState16propagateNoteOffEv
-080600e0 00000390 T _ZN10SynthStateC1Ev	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/SynthState.cpp:708
-080600e0 00000390 T _ZN10SynthStateC2Ev
-08060470 00000118 T _ZN10SynthState29encoderTurnedForStepSequencerEiii
-08060588 00000154 T _ZN10SynthState26encoderTurnedForArpPatternEiii
-080606dc 000000b0 T _ZN10SynthState18newRandomizerValueEii
-0806078c 00000034 T _ZN10SynthState14setScalaEnableEb
-080607c0 0000003a T _ZN10SynthState13setScalaScaleEi
-080607fc 000000fc T _ZN10SynthState16loadPreenFMPatchEiPK8PFM2FileiP14OneSynthParams
-080608f8 00000108 T _ZN10SynthState12loadDx7PatchEiPK8PFM2FileiP14OneSynthParams
-08060a00 0000094c T _ZN10SynthState13encoderTurnedEii
-0806134c 000000ac T _ZN10SynthState16loadPreenFMComboEPK8PFM2Filei
-080613f8 00000150 T _ZN10SynthState24loadPreenFMPatchFromMidiEiiiiP14OneSynthParams
-08061548 00000054 T _ZN10SynthState12resetDisplayEv
-0806159c 00000150 T _ZNK10SynthState21isCurrentRowAvailableEv
-080616ec 0000002e T _ZN10SynthState18getRowFromOperatorEv
-0806171c 00000742 T _ZN10SynthState17twoButtonsPressedEii
-08061e60 00000320 T _ZN10SynthState18changeSynthModeRowEii
-08062180 000004ba T _ZN10SynthState31encoderTurnedWhileButtonPressedEiii
-0806263c 00000026 T _ZN10SynthState16isEnterNameStateEi
-08062664 00000124 T _ZN10SynthState20setCurrentInstrumentEi
-08062788 00000e44 T _ZN10SynthState18afterButtonPressedEv
-080635cc 00000368 T _ZN10SynthState8menuBackEv
-08063934 0000001c T _ZN10SynthState27propagateAfterNewParamsLoadEi
-08063950 00000018 T _ZN10SynthState26propagateAfterNewComboLoadEv
-08063968 00000066 T _ZN10SynthState18propagateNewTimbreEi
-080639d0 00000088 T _ZN10SynthState10tempoClickEv
-08063a58 00000006 T _ZN10SynthState18setParamsAndTimbreEP14OneSynthParamsi
-08063a60 0000001e T _ZN10SynthState15copySynthParamsEPcS0_
-08063a80 00000058 T _ZN10SynthState18analyseSysexBufferEPh
-08063ad8 0000001c T _ZN10SynthState16onUserChangedRowEv
-08063af4 00000016 T _ZNK10SynthState19getLastRowForTimbreEi
-08063b0c 0000001e T _ZN10SynthState19setLastRowForTimbreEii
-08063b2c 0000001c T _Z12getRandomInti
-08063b48 00000060 T _Z14getRandomFloatff
-08063ba8 00000070 T _Z14getRandomShapei
-08063c18 0000002c T _Z22getRandomFrequencyTypei
-08063c44 000000dc T _Z18getRandomFrequencyi
-08063d20 000000f4 T _Z11getFineTunei
-08063e18 000016b0 T _ZN10SynthState15randomizePresetEv
-080654c8 00000800 T _ZN10SynthState13buttonPressedEi
-08065cc8 0000032c t _GLOBAL__sub_I_allChars
-08065ff4 0000000c W _ZN6LfoOscD1Ev	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Lfo.h:36
-08065ff4 0000000c W _ZN6LfoOscD2Ev
-08066000 0000000c W _ZN10LfoStepSeqD1Ev	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Lfo.h:36
-08066000 0000000c W _ZN10LfoStepSeqD2Ev
-0806600c 00000014 W _ZN10LfoStepSeqD0Ev
-08066020 00000014 W _ZN6LfoOscD0Ev
-08066034 00000618 W _ZN3Osc12getNextBlockEP8OscState
-0806664c 000000d4 W _ZN3Env13getNextAmpExpEP7EnvData
-08066720 0000016c T _ZN5VoiceC1Ev	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Voice.cpp:26
-08066720 0000016c T _ZN5VoiceC2Ev
-0806688c 00000070 T _ZN5VoiceD1Ev	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Voice.cpp:55
-0806688c 00000070 T _ZN5VoiceD2Ev
-080668fc 00000018 T _ZN5Voice4initEv	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Voice.cpp:59
-08066914 000000ae T _ZN5Voice11glideToNoteEs	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Voice.cpp:69
-080669c4 00000180 T _ZN5Voice16noteOnWithoutPopEssjff	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Voice.cpp:87
-08066b44 0000013c T _ZN5Voice5glideEv	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Voice.cpp:119
-08066c80 000002b0 T _ZN5Voice6noteOnEssjff	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Voice.cpp:157
-08066f30 00000052 T _ZN5Voice21endNoteOrBeginNextOneEv
-08066f84 0000000e T _ZN5Voice17glideFirstNoteOffEv
-08066f94 00000578 T _ZN5Voice7noteOffEv	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Voice.cpp:242
-0806750c 00000036 T _ZN5Voice7killNowEv	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Voice.cpp:272
-08067544 0000a9a6 T _ZN5Voice9nextBlockEv	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Voice.cpp:288
-08071eec 00000110 T _ZN5Voice16setCurrentTimbreEP6Timbre	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Voice.cpp:3687
-08071ffc 0000000c W _ZN3OscD1Ev	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/SynthStateAware.h:25
-08071ffc 0000000c W _ZN3OscD2Ev
-08072008 0000000c W _ZN3EnvD1Ev	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Env.h:97
-08072008 0000000c W _ZN3EnvD2Ev
-08072014 0000004c T _ZN6TimbreD1Ev	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Env.h:97
-08072014 0000004c T _ZN6TimbreD2Ev
-08072060 00000014 W _ZN3EnvD0Ev
-08072074 00000050 T _ZN6TimbreD0Ev
-080720c4 00000014 W _ZN3OscD0Ev
-080720d8 00000028 T _ZNK6Timbre21getArpeggiatorPatternEv
-08072100 000004ee T _ZN6TimbreC1Ev	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Timbre.cpp:526
-08072100 000004ee T _ZN6TimbreC2Ev
-080725f0 00000158 T _ZN6Timbre4initEiP10SynthState
-08072748 00000018 T _ZN6Timbre14setVoiceNumberEii
-08072760 0000000a T _ZN6Timbre16initVoicePointerEiP5Voice
-0807276c 00000a4c T _ZN6Timbre11preenNoteOnEhh
-080731b8 000000c8 T _ZN6Timbre6noteOnEhh
-08073280 0000031c T _ZN6Timbre12preenNoteOffEh
-0807359c 0000004a T _ZN6Timbre7noteOffEh
-080735e8 0000008a T _ZN6Timbre14stopPlayingNowEv
-08073674 000000a8 T _ZN6Timbre12setHoldPedalEi
-0807371c 00000048 T _ZN6Timbre14setNewBPMValueEf
-08073764 000000e4 T _ZN6Timbre19setArpeggiatorClockEf
-08073848 00000088 T _ZN6Timbre14cleanNextBlockEv
-080738d0 00000abc T _ZN6Timbre24prepareMatrixForNewBlockEv
-0807438c 0000024c T _ZN6Timbre15voicesNextBlockEv
-080745d8 0000008e T _ZN6Timbre5glideEv
-08074668 0000a0e0 T _ZN6Timbre12fxAfterBlockEf
-0807e748 0000061a T _ZN6Timbre12initADSRloopEv
-0807ed64 00000170 T _ZN6Timbre16resetArpeggiatorEv
-0807eed8 000000a0 T _ZN6Timbre11setNewValueEiP16ParameterDisplayf
-0807ef78 00000010 T _ZN6Timbre15getSeqStepValueEii
-0807ef88 00000010 T _ZN6Timbre15setSeqStepValueEiii
-0807ef98 000000e0 T _ZN6Timbre17recomputeBPValuesEff
-0807f078 000002c0 T _ZN6Timbre16setNewEffecParamEi
-0807f338 000000bc T _ZN6Timbre17arpeggiatorNoteOnEhh
-0807f3f4 00000034 T _ZN6Timbre18arpeggiatorNoteOffEh
-0807f428 0000001a T _ZN6Timbre14OnMidiContinueEv
-0807f444 00000074 T _ZN6Timbre11OnMidiStartEv
-0807f4b8 0000007e T _ZN6Timbre10OnMidiStopEv
-0807f538 00000054 T _ZN6Timbre8SendNoteEhh
-0807f58c 00000012 T _ZN6Timbre9SendLaterEhhhh
-0807f5a0 00000056 T _ZN6Timbre18SendScheduledNotesEv
-0807f5f8 00000064 T _ZN6Timbre10FlushQueueEv
-0807f65c 00000190 T _ZN6Timbre12StepArpeggioEv
-0807f7ec 00000354 T _ZN6Timbre4TickEv
-0807fb40 0000001e T _ZN6Timbre11OnMidiClockEv
-0807fb60 0000004e T _ZN6Timbre19prepareForNextBlockEv
-0807fbb0 0000002e T _ZN6Timbre13StartArpeggioEv
-0807fbe0 0000005c T _ZN6Timbre5StartEv
-0807fc3c 00000022 T _ZN6Timbre23arpeggiatorSetHoldPedalEh
-0807fc60 0000001a T _ZN6Timbre12setLatchModeEh
-0807fc7c 00000046 T _ZN6Timbre12setDirectionEh
-0807fcc8 000001dc T _ZN6Timbre14lfoValueChangeEiif
-0807fea8 000003c0 T _ZN6Timbre19updateMidiNoteScaleEi
-08080268 00000958 T _ZN6Timbre18afterNewParamsLoadEv
-08080bc0 000000f4 T _ZN6Timbre17midiClockContinueEi
-08080cb4 000000f4 T _ZN6Timbre14midiClockStartEv
-08080da8 000000e8 T _ZN6Timbre25midiClockSongPositionStepEi
-08080e90 0000004c T _ZN6Timbre22resetMatrixDestinationEf
-08080edc 0000003c T _ZN6Timbre15setMatrixSourceE10SourceEnumf
-08080f18 00000384 T _ZN6Timbre13verifyLfoUsedEiff
-0808129c 00000034 T _Z6strcmpPKcS0_	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Common.cpp:92
-080812d0 000000c4 t _ZL9dir_clearP5FATFSm	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:1678
-08081394 00000112 t _ZL7sync_fsP5FATFS	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:1128
-080814a8 0000006e t _ZL10dir_removeP3DIR	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:2632
-08081518 00000068 t _ZL11move_windowP5FATFSm	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:1102
-08081580 00000730 t _ZL12mount_volumePPKcPP5FATFSh	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:3375
-08081cb0 00000216 t _ZL7get_fatP7FFOBJIDm	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:1189
-08081ec8 0000006a t _ZL7dir_sdiP3DIRm.constprop.13	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:1726
-08081f34 0000025e t _ZL7put_fatP5FATFSmm.part.9	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:1256
-08082194 0000015c t _ZL12create_chainP7FFOBJIDm	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:1545
-080822f0 000000dc t _ZL8dir_nextP3DIRi	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:1765
-080823cc 000002cc t _ZL11follow_pathP3DIRPKc	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:3064
-08082698 000000b4 t _ZL8dir_readP3DIRi.constprop.11	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:2364
-0808274c 0000025c t _ZL12dir_registerP3DIR	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:2526
-080829a8 00000074 T f_mount	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:3643
-08082a1c 00000368 T f_open	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:3691
-08082d84 000002f8 T f_read	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:3883
-0808307c 000003ae T f_write	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:3984
-0808342c 0000010a T f_sync	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:4106
-08083538 00000068 T f_close	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:4187
-080835a0 000001a0 T f_lseek	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:4402
-08083740 000000cc T f_opendir	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:4565
-0808380c 00000058 T f_closedir	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:4631
-08083864 0000018c T f_readdir	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:4661
-080839f0 0000015e T f_stat	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:4749
-08083b50 000003a8 T f_getfree	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:4784
-08083ef8 000001d8 T f_truncate	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:4874
-080840d0 00000124 T f_unlink	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:4924
-080841f4 000001fc T f_mkdir	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:5018
-080843f0 00000224 T f_rename	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:5102
-08084614 000004cc T _ZN9NoteStack6NoteOnEhh	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/midipal/note_stack.cpp:29
-08084ae0 000000da T _ZN9NoteStack7NoteOffEh
-08084bbc 000000f6 T _ZN9NoteStack5ClearEv	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/midipal/note_stack.cpp:105
-08084cb4 000000a4 T _ZN14EventScheduler4InitEv	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/midipal/event_scheduler.cpp:24
-08084d58 0000006a T _ZN14EventScheduler4TickEv	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/midipal/event_scheduler.cpp:39
-08084dc4 00000040 T _ZN14EventScheduler6RemoveEhh	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/midipal/event_scheduler.cpp:54
-08084e04 0000009c T _ZN14EventScheduler8ScheduleEhhhh	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/midipal/event_scheduler.cpp:69
-08084eb4 00000060 W Reset_Handler
-08084ebe t CopyDataInit
-08084ec6 t LoopCopyDataInit
-08084ed8 t CopyCCMInit
-08084ee0 t LoopCopyCCMInit
-08084ef2 t FillZerobss
-08084ef8 t LoopFillZerobss
-08084f02 t FillZeroCCMNoLoad
-08084f08 t LoopFillZeroCCMNoLoad
-08084f40 00000004 W ADC_IRQHandler
-08084f40 00000004 W CAN1_RX0_IRQHandler
-08084f40 00000004 W CAN1_RX1_IRQHandler
-08084f40 00000004 W CAN1_SCE_IRQHandler
-08084f40 00000004 W CAN1_TX_IRQHandler
-08084f40 00000004 W CAN2_RX0_IRQHandler
-08084f40 00000004 W CAN2_RX1_IRQHandler
-08084f40 00000004 W CAN2_SCE_IRQHandler
-08084f40 00000004 W CAN2_TX_IRQHandler
-08084f40 00000004 W CRYP_IRQHandler
-08084f40 00000004 W DCMI_IRQHandler
-08084f40 00000004 W DMA1_Stream0_IRQHandler
-08084f40 00000004 W DMA1_Stream1_IRQHandler
-08084f40 00000004 W DMA1_Stream2_IRQHandler
-08084f40 00000004 W DMA1_Stream3_IRQHandler
-08084f40 00000004 W DMA1_Stream4_IRQHandler
-08084f40 00000004 W DMA1_Stream6_IRQHandler
-08084f40 00000004 W DMA1_Stream7_IRQHandler
-08084f40 00000004 W DMA2_Stream0_IRQHandler
-08084f40 00000004 W DMA2_Stream1_IRQHandler
-08084f40 00000004 W DMA2_Stream2_IRQHandler
-08084f40 00000004 W DMA2_Stream3_IRQHandler
-08084f40 00000004 W DMA2_Stream4_IRQHandler
-08084f40 00000004 W DMA2_Stream5_IRQHandler
-08084f40 00000004 W DMA2_Stream6_IRQHandler
-08084f40 00000004 W DMA2_Stream7_IRQHandler
-08084f40 00000004 W DebugMon_Handler
-08084f40 00000004 T Default_Handler
-08084f40 00000004 W ETH_IRQHandler
-08084f40 00000004 W ETH_WKUP_IRQHandler
-08084f40 00000004 W EXTI0_IRQHandler
-08084f40 00000004 W EXTI15_10_IRQHandler
-08084f40 00000004 W EXTI1_IRQHandler
-08084f40 00000004 W EXTI2_IRQHandler
-08084f40 00000004 W EXTI3_IRQHandler
-08084f40 00000004 W EXTI4_IRQHandler
-08084f40 00000004 W EXTI9_5_IRQHandler
-08084f40 00000004 W FLASH_IRQHandler
-08084f40 00000004 W FPU_IRQHandler
-08084f40 00000004 W FSMC_IRQHandler
-08084f40 00000004 W HASH_RNG_IRQHandler
-08084f40 00000004 W I2C1_ER_IRQHandler
-08084f40 00000004 W I2C1_EV_IRQHandler
-08084f40 00000004 W I2C2_ER_IRQHandler
-08084f40 00000004 W I2C2_EV_IRQHandler
-08084f40 00000004 W I2C3_ER_IRQHandler
-08084f40 00000004 W I2C3_EV_IRQHandler
-08084f40 t Infinite_Loop
-08084f40 00000004 W OTG_FS_WKUP_IRQHandler
-08084f40 00000004 W OTG_HS_EP1_IN_IRQHandler
-08084f40 00000004 W OTG_HS_EP1_OUT_IRQHandler
-08084f40 00000004 W OTG_HS_WKUP_IRQHandler
-08084f40 00000004 W PVD_IRQHandler
-08084f40 00000004 W PendSV_Handler
-08084f40 00000004 W RCC_IRQHandler
-08084f40 00000004 W RTC_Alarm_IRQHandler
-08084f40 00000004 W RTC_WKUP_IRQHandler
-08084f40 00000004 W SDIO_IRQHandler
-08084f40 00000004 W SPI1_IRQHandler
-08084f40 00000004 W SPI2_IRQHandler
-08084f40 00000004 W SPI3_IRQHandler
-08084f40 00000004 W SVC_Handler
-08084f40 00000004 W TAMP_STAMP_IRQHandler
-08084f40 00000004 W TIM1_BRK_TIM9_IRQHandler
-08084f40 00000004 W TIM1_CC_IRQHandler
-08084f40 00000004 W TIM1_TRG_COM_TIM11_IRQHandler
-08084f40 00000004 W TIM1_UP_TIM10_IRQHandler
-08084f40 00000004 W TIM3_IRQHandler
-08084f40 00000004 W TIM4_IRQHandler
-08084f40 00000004 W TIM5_IRQHandler
-08084f40 00000004 W TIM6_DAC_IRQHandler
-08084f40 00000004 W TIM7_IRQHandler
-08084f40 00000004 W TIM8_BRK_TIM12_IRQHandler
-08084f40 00000004 W TIM8_CC_IRQHandler
-08084f40 00000004 W TIM8_TRG_COM_TIM14_IRQHandler
-08084f40 00000004 W TIM8_UP_TIM13_IRQHandler
-08084f40 00000004 W UART4_IRQHandler
-08084f40 00000004 W UART5_IRQHandler
-08084f40 00000004 W USART1_IRQHandler
-08084f40 00000004 W USART2_IRQHandler
-08084f40 00000004 W USART6_IRQHandler
-08084f40 00000004 W WWDG_IRQHandler
-08084f44 00000014 T __cxa_pure_virtual
-08084f58 00000014 T __cxa_deleted_virtual
-08084f6c 00000008 T _ZdlPv
-08084f74 0000000a T __aeabi_atexit
-08084f7e 00000008 T _ZN10__cxxabiv111__terminateEPFvvE
-08084f88 00000010 T _ZSt9terminatev
-08084f98 00000008 T _ZN10__cxxabiv112__unexpectedEPFvvE
-08084fa0 00000010 T _ZSt10unexpectedv
-08084fb0 00000010 T _ZSt13set_terminatePFvvE
-08084fc0 00000010 T _ZSt14set_unexpectedPFvvE
-08084fd0 00000098 T _ZN9__gnu_cxx27__verbose_terminate_handlerEv
-08085068 0000001a T __cxa_current_exception_type
-08085084 00000008 T __cxa_get_globals_fast
-0808508c 00000008 T __cxa_get_globals
-08085094 0000008c t d_make_comp
-08085120 0000002e t d_make_name
-08085150 0000004c t d_number
-0808519c 0000002e t d_number_component
-080851cc 000000aa t d_cv_qualifiers
-08085278 0000002e t d_compact_number
-080852a8 00000042 t d_template_param
-080852ec 0000001c t d_discriminator
-08085308 00000178 t d_substitution
-08085480 0000003c t d_append_char
-080854bc 00000066 t d_lookup_template_argument
-08085524 00000080 t d_find_pack
-080855a4 00000084 t d_source_name
-08085628 00000044 t d_call_offset
-0808566c 0000012a t d_append_string
-08085798 000000ca t d_expr_primary
-08085864 000000ba t d_template_args
-08085920 00000290 t d_name
-08085bb0 000006d8 t d_type
-08086288 000000ec t d_operator_name
-08086374 00000078 t d_parmlist
-080863ec 00000230 t d_unqualified_name
-0808661c 000003c4 t d_expression
-080869e0 0000005e t d_exprlist
-08086a40 0000003c t d_bare_function_type
-08086a7c 0000063a t d_encoding
-080870b8 00000078 t d_growable_string_callback_adapter
-08087130 00005bd8 t d_print_comp
-0808cd08 00000e5c t d_print_mod
-0808db64 0000061c t d_print_mod_list
-0808e180 000001b8 t d_print_array_type
-0808e338 000001d0 t d_print_function_type
-0808e508 00000152 t d_print_cast
-0808e65c 00000134 t d_print_expr_op
-0808e790 0000009e t d_print_subexpr
-0808e830 00000250 t d_demangle_callback.constprop.8
-0808ea80 000000c8 T __cxa_demangle
-0808eb48 0000001c T __gcclibcxx_demangle_callback
-0808eb64 00000074 T cosf
-0808ebd8 0000008c T floorf
-0808ec64 0000005a T roundf
-0808ecc0 00000110 T exp
-0808edd0 00000366 T pow
-0808f138 00000334 T __ieee754_exp
-0808f470 00000b50 T __ieee754_pow
-0808ffc0 00000216 T __ieee754_sqrt
-080901d8 0000028c T __ieee754_rem_pio2f
-08090464 00000104 T __kernel_cosf
-08090568 00000a32 T __kernel_rem_pio2f
-08090f9c 0000008c T __kernel_sinf
-08091028 00000012 T fabs
-0809103c 00000010 T finite
-0809104c 00000070 T __fpclassifyd
-080910bc 00000004 T matherr
-080910c0 00000010 T nan
-080910d0 00000120 T rint
-080911f0 00000120 T scalbn
-08091310 0000000e T fabsf
-08091320 000000cc T scalbnf
-080913ec 00000022 T copysign
-08091410 0000001a T copysignf
-0809142c T __aeabi_drsub
-08091434 0000027a T __aeabi_dsub
-08091434 0000027a T __subdf3
-08091438 00000276 T __adddf3
-08091438 00000276 T __aeabi_dadd
-080916b0 0000001e T __aeabi_ui2d
-080916b0 0000001e T __floatunsidf
-080916d0 00000022 T __aeabi_i2d
-080916d0 00000022 T __floatsidf
-080916f4 0000003a T __aeabi_f2d
-080916f4 0000003a T __extendsfdf2
-08091730 0000006a T __aeabi_ul2d
-08091730 0000006a T __floatundidf
-08091740 0000005a T __aeabi_l2d
-08091740 0000005a T __floatdidf
-0809179c 00000254 T __aeabi_dmul
-0809179c 00000254 T __muldf3
-080919f0 000001d0 T __aeabi_ddiv
-080919f0 000001d0 T __divdf3
-08091bc0 0000008a T __gedf2
-08091bc0 0000008a T __gtdf2
-08091bc8 00000082 T __ledf2
-08091bc8 00000082 T __ltdf2
-08091bd0 0000007a T __cmpdf2
-08091bd0 0000007a T __eqdf2
-08091bd0 0000007a T __nedf2
-08091c4c 00000020 T __aeabi_cdrcmple
-08091c5c 00000010 T __aeabi_cdcmpeq
-08091c5c 00000010 T __aeabi_cdcmple
-08091c6c 00000012 T __aeabi_dcmpeq
-08091c80 00000012 T __aeabi_dcmplt
-08091c94 00000012 T __aeabi_dcmple
-08091ca8 00000012 T __aeabi_dcmpge
-08091cbc 00000012 T __aeabi_dcmpgt
-08091cd0 0000004e T __aeabi_d2iz
-08091cd0 0000004e T __fixdfsi
-08091d20 0000009e T __aeabi_d2f
-08091d20 0000009e T __truncdfsf2
-08091dc0 00000014 T __register_exitproc
-08091dd4 0000000e T abort
-08091de2 00000016 T __cxa_atexit
-08091df8 0000000c T __errno
-08091e04 0000002c T exit
-08091e30 0000002c T __libc_fini_array
-08091e5c 00000060 T _fputs_r
-08091ebc 00000014 T fputs
-08091ed0 000002b6 T __sfvwrite_r
-08092188 0000004c T __libc_init_array
-080921d4 00000010 T malloc
-080921e4 00000010 T free
-080921f4 00000094 T _malloc_r
-08092288 0000001c T memchr
-080922a4 0000001e T memcmp
-080922c2 00000012 T memcpy
-080922d4 00000034 T memmove
-08092308 00000010 T memset
-08092318 00000014 T realloc
-0809232c 00000048 T _realloc_r
-08092374 00000020 T _sbrk_r
-08092394 0000002c T _init_signal_r
-080923c0 00000030 T _signal_r
-080923f0 00000050 T _raise_r
-08092440 0000004a T __sigtramp_r
-0809248c 00000010 T raise
-0809249c 00000014 T signal
-080924b0 0000000c T _init_signal
-080924bc 00000010 T __sigtramp
-080924cc 00000024 T _kill_r
-080924f0 00000004 T _getpid_r
-080924f4 00000040 T _siprintf_r
-080924f4 00000040 T _sprintf_r
-08092534 00000048 T siprintf
-08092534 00000048 T sprintf
-0809257c 00000016 T strcmp
-08092592 00000010 T strlen
-080925a2 0000002e T strncmp
-080925d0 000000ae T __ssputc_r
-0809267e 000000fa T __ssprint_r
-08092778 000001f4 T _svfiprintf_r
-08092778 000001f4 T _svfprintf_r
-0809296c 0000001c T write
-08092988 000000de T _printf_common
-08092a68 0000024c T _printf_i
-08092cb4 00000024 T _write_r
-08092cd8 000000ec T __swsetup_r
-08092dc4 0000007c T __do_register_exitproc
-08092e40 000000a0 T __call_exitprocs
-08092ee0 0000014c T _fflush_r
-0809302c 00000024 T fflush
-08093050 00000004 t __fp_lock
-08093054 00000004 t __fp_unlock
-08093058 00000032 T _cleanup_r
-0809308c 00000048 t std.isra.0
-080930d4 0000002a T __sfmoreglue
-08093100 0000000c T _cleanup
-0809310c 00000058 T __sinit
-08093164 00000078 T __sfp
-080931dc 00000002 T __sfp_lock_acquire
-080931de 00000002 T __sfp_lock_release
-080931e0 00000002 T __sinit_lock_acquire
-080931e2 00000002 T __sinit_lock_release
-080931e4 00000014 T __fp_lock_all
-080931f8 00000014 T __fp_unlock_all
-0809320c 00000088 T _free_r
-08093294 00000040 T _fwalk
-080932d4 00000044 T _fwalk_reent
-08093318 000000a8 T __smakebuf_r
-080933c0 00000012 T _malloc_usable_size_r
-080933d2 0000001a T cleanup_glue
-080933ec 000000ac T _reclaim_reent
-08093498 00000030 T _wrapup_reent
-080934c8 00000022 T __sread
-080934ea 00000004 T __seofread
-080934ee 0000003c T __swrite
-0809352a 00000024 T __sseek
-0809354e 00000008 T __sclose
-08093558 00000020 T _close_r
-08093578 00000024 T _fstat_r
-0809359c 00000020 T _isatty_r
-080935bc 00000024 T _lseek_r
-080935e0 00000024 T _read_r
-08093604 00000012 T _close
-08093618 00000012 T _fstat
-0809362c 00000012 T _getpid
-08093640 00000010 T _isatty
-08093650 00000012 T _kill
-08093664 00000012 T _lseek
-08093678 00000012 T _read
-0809368c 00000034 T _sbrk
-080936c0 00000012 T _write
-080936d4 00000002 T _exit
-080936d8 T _init
-080936e4 T _fini
-080936f0 00000010 V _ZTV13LiquidCrystal
-08093700 00000020 V _ZTV16EncodersListener
-08093720 00000010 V _ZTV7Storage
-08093730 00000010 V _ZTV6Hexter
-08093934 00000003 t CSWTCH.44
-080939f8 00000180 T midiConfig	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/hardware/Menu.cpp:44
-08093b78 00000290 T allMenus	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/hardware/Menu.cpp:219
-080941b8 00000014 V _ZTV15SynthStateAware
-080941d0 00000018 V _ZTV10VisualInfo
-080941e8 00000038 V _ZTV18SynthParamListener
-08094220 00000018 V _ZTV17SynthMenuListener
-08094278 0000009c T _ZTV9FMDisplay
-08094a28 00000028 t CSWTCH.83
-08094a88 00000018 T _ZTV9ComboBank
-08094aa0 00000018 T _ZTV17ConfigurationFile
-08094b28 00000018 T _ZTV12DX7SysexFile
-08094b50 00000018 T _ZTV9PatchBank
-08094b78 00000018 T _ZTV9ScalaFile
-08094b90 00000010 T _ZTV15FileSystemUtils
-08094c20 00000018 T _ZTV15PreenFMFileType
-08094c38 00000018 T _ZTV12UserWaveform
-08094ca0 00000018 V _ZTV11SysexSender
-08094cb8 00000074 T _ZTV11MidiDecoder
-08094d30 00000014 T _ZTV3Lfo
-08094d48 00000014 V _ZTV6LfoEnv
-08094d60 00000014 V _ZTV7LfoEnv2
-08094d78 00000380 T preenMainPreset	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Presets.cpp:98
-080950f8 00000380 T defaultPreset	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Presets.cpp:23
-08095478 00000014 V _ZTV17SynthParamChecker
-08095490 00000098 T _ZTV5Synth
-08095570 0000000c t _ZL13allEngineRows
-0809557c 00000003 t _ZL17oscTypeNamesOrder
-0809607c 00000032 t _ZL17matrixTargetOrder
-080960b0 0000000c t CSWTCH.197
-080960bc 0000000c t CSWTCH.198
-080960c8 0000000c t CSWTCH.199
-080960d4 00000032 t _ZL20matrixTargetPosition
-08096108 00000031 t _ZL12filtersOrder
-0809613c 00000031 t _ZL15filtersPosition
-08096170 00000020 T _ZTV10SynthState
-08096190 00000015 t _ZL17matrixSourceOrder
-080961a8 0000000e t _ZL18oscShapeNamesOrder
-080961b8 00000015 t _ZL20matrixSourcePosition
-080961d0 0000000c t CSWTCH.200
-080961dc 00000003 t _ZL20oscTypeNamesPosition
-080961e0 0000000e t _ZL21oscShapeNamesPosition
-080961f0 00000014 V _ZTV6LfoOsc
-08096208 00000014 V _ZTV10LfoStepSeq
-08096250 00000014 V _ZTV3Osc
-08096268 00000010 V _ZTV3Env
-08096278 00000011 t _ZL24midi_clock_tick_per_step
-0809628c 00000a00 t _ZL11filterpoles
-08096c90 00000010 T _ZTV6Timbre
-08096d6c 000000c4 t standard_subs
-08096e30 00000294 t cplus_demangle_builtin_types
-080970c4 000003a0 t cplus_demangle_operators
-08097a78 00000010 t halF
-08097a88 00000010 t ln2LO
-08097a98 00000010 t ln2HI
-08097aa8 00000010 t dp_h
-08097ab8 00000010 t dp_l
-08097ac8 00000010 t bp
-08097ad8 00000080 t npio2_hw
-08097b58 00000318 t two_over_pi
-08097e70 0000000c t init_jk
-08097e7c 0000002c t PIo2
-08097ea8 00000010 t TWO52
-08097ebc 00000004 T _global_impure_ptr
-08097ef4 00000020 T __sf_fake_stdin
-08097f14 00000020 T __sf_fake_stdout
-08097f34 00000020 T __sf_fake_stderr
-08097f54 t __EH_FRAME_BEGIN__
-08097f54 t __FRAME_END__
-08097f58 A __exidx_start
-08097f60 A __etext
-08097f60 A __exidx_end
-08097f60 A _sidata
-0809f3b8 A _siccm
+0805a210 00000b84 T _ZN11MidiDecoder13controlChangeEiR9MidiEvent
+0805ad94 00000556 T _ZN11MidiDecoder17midiEventReceivedE9MidiEvent
+0805b2ec 00000026 T _ZN11MidiDecoder14newMessageDataEh
+0805b314 00000334 T _ZN11MidiDecoder7newByteEh
+0805b648 0000001a T _ZN11MidiDecoder22getNrpnRowFromParamRowEi
+0805b664 00000018 T _ZN11MidiDecoder22getParamRowFromNrpnRowEi
+0805b67c 0000018c T _ZN3Env4initEP15EnvelopeParamsAP15EnvelopeParamsBhPf
+0805b808 0000000c W _ZN3LfoD1Ev	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Lfo.h:36
+0805b808 0000000c W _ZN3LfoD2Ev
+0805b814 00000014 W _ZN3LfoD0Ev
+0805b828 00000064 T _ZN3Lfo4initEP6Matrix10SourceEnum15DestinationEnum
+0805b88c 0000000c T _ZN3LfoC1Ev	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Lfo.cpp:25
+0805b88c 0000000c T _ZN3LfoC2Ev
+0805b898 0000000c W _ZN6LfoEnvD1Ev	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Lfo.h:36
+0805b898 0000000c W _ZN6LfoEnvD2Ev
+0805b8a4 00000014 W _ZN6LfoEnvD0Ev
+0805b8b8 00000024 T _ZN6LfoEnvC1Ev	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/LfoEnv.cpp:20
+0805b8b8 00000024 T _ZN6LfoEnvC2Ev
+0805b8e0 00000098 T _ZN6LfoEnv4initEP14EnvelopeParamsP6Matrix10SourceEnum15DestinationEnum
+0805b978 0000000c W _ZN7LfoEnv2D1Ev	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Lfo.h:36
+0805b978 0000000c W _ZN7LfoEnv2D2Ev
+0805b984 00000014 W _ZN7LfoEnv2D0Ev
+0805b998 00000024 T _ZN7LfoEnv2C1Ev	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/LfoEnv2.cpp:21
+0805b998 00000024 T _ZN7LfoEnv2C2Ev
+0805b9c0 00000098 T _ZN7LfoEnv24initEP15Envelope2ParamsP6Matrix10SourceEnum15DestinationEnum
+0805ba58 0000029c T _ZN6LfoOsc9midiClockEib
+0805bcf4 00000280 T _ZN6LfoOsc17nextValueInMatrixEv
+0805bf74 00000060 T _ZN6LfoOsc6noteOnEv
+0805bfd4 000000d0 T _ZN6LfoOsc4initEP9LfoParamsPfP6Matrix10SourceEnum15DestinationEnum
+0805c0a4 00000100 T _ZN10LfoStepSeq9midiClockEib
+0805c1a4 00000040 T _ZN10LfoStepSeq12valueChangedEi
+0805c1e4 000000e4 T _ZN10LfoStepSeq17nextValueInMatrixEv
+0805c2c8 0000006c T _ZN10LfoStepSeq6noteOnEv
+0805c334 00000002 T _ZN10LfoStepSeq7noteOffEv
+0805c338 000000f0 T _ZN10LfoStepSeq4initEP19StepSequencerParamsP18StepSequencerStepsP6Matrix10SourceEnum15DestinationEnum
+0805c428 00000002 T _ZN6MatrixC1Ev	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Matrix.cpp:22
+0805c428 00000002 T _ZN6MatrixC2Ev
+0805c42c 00000002 T _ZN6MatrixD1Ev	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Matrix.cpp:25
+0805c42c 00000002 T _ZN6MatrixD2Ev
+0805c430 00000006 T _ZN6Matrix4initEP15MatrixRowParams	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Matrix.cpp:29
+0805c438 00000298 T _ZN3Osc4initEP10SynthStateP16OscillatorParams15DestinationEnum
+0805c6d0 0000010c T _ZN3Osc7newNoteEP8OscStateiff
+0805c7dc 000000dc T _ZN3Osc11glideToNoteEP8OscStateif
+0805c8b8 0000001e T _ZN3Osc9glideStepEP8OscStatef
+0805c8d8 0000000c W _ZN17SynthParamCheckerD1Ev	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/SynthParamChecker.h:25
+0805c8d8 0000000c W _ZN17SynthParamCheckerD2Ev
+0805c8e4 00000012 W _ZN5Synth25newParamValueFromExternalEiiiP16ParameterDisplayff
+0805c8f8 00000002 W _ZN5Synth13newcurrentRowEii
+0805c8fc 00000002 W _ZN5Synth8showAlgoEv
+0805c900 00000002 W _ZN5Synth17showIMInformationEv
+0805c904 00000002 W _ZN5Synth12newSynthModeEP9FullState
+0805c908 00000006 W _ZThn24_N5Synth12newSynthModeEP9FullState	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Synth.h:182
+0805c910 00000002 W _ZN5Synth8menuBackE9MenuStateP9FullState
+0805c914 00000006 W _ZThn24_N5Synth8menuBackE9MenuStateP9FullState	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Synth.h:183
+0805c91c 00000002 W _ZN5Synth12newMenuStateEP9FullState
+0805c920 00000006 W _ZThn24_N5Synth12newMenuStateEP9FullState	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Synth.h:184
+0805c928 00000016 T _ZN5Synth9newTimbreEi
+0805c940 00000018 W _ZN5Synth8stopNoteEic
+0805c958 0000001a W _ZN5Synth8playNoteEicc
+0805c974 00000014 W _ZN17SynthParamCheckerD0Ev
+0805c988 000000f0 T _ZN5SynthD1Ev	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Synth.cpp:40
+0805c988 000000f0 T _ZN5SynthD2Ev
+0805ca78 00000008 T _ZThn8_N5SynthD1Ev
+0805ca80 00000008 T _ZThn16_N5SynthD1Ev
+0805ca88 00000050 T _ZN5Synth13newMenuSelectEP9FullState
+0805cad8 00000008 T _ZThn24_N5Synth13newMenuSelectEP9FullState
+0805cae0 0000035e T _ZN5Synth19beforeNewParamsLoadEi
+0805ce40 0000038c T _ZN5Synth18afterNewParamsLoadEi
+0805d1cc 00000464 T _ZN5Synth17afterNewComboLoadEv
+0805d630 000000f8 T _ZN5SynthD0Ev
+0805d728 00000008 T _ZThn8_N5SynthD0Ev
+0805d730 00000008 T _ZThn16_N5SynthD0Ev
+0805d738 000001b4 T _ZN5Synth18checkNewParamValueEiiifPf
+0805d8ec 00000008 T _ZThn16_N5Synth18checkNewParamValueEiiifPf
+0805d8f4 000000d4 T _ZN5SynthC1Ev	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Synth.cpp:37
+0805d8f4 000000d4 T _ZN5SynthC2Ev
+0805d9c8 00000400 T _ZN5Synth4initEP10SynthState
+0805ddc8 00000006 W _ZN5Synth13setSynthStateEP10SynthState
+0805ddd0 00000006 W _ZThn8_N5Synth13setSynthStateEP10SynthState	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Synth.h:45
+0805ddd8 00000058 T _ZN5Synth18setDacNumberOfBitsEm
+0805de30 0000001a T _ZN5Synth6noteOnEicc
+0805de4c 00000014 T _ZN5Synth7noteOffEic
+0805de60 00000014 T _ZN5Synth12setHoldPedalEii
+0805de74 000000c8 T _ZN5Synth10allNoteOffEi
+0805df3c 000000a4 T _ZN5Synth11allSoundOffEi
+0805dfe0 0000008e T _ZN5Synth11allSoundOffEv
+0805e070 0000007a T _ZN5Synth9isPlayingEv
+0805e0ec 000005ce T _ZN5Synth19buildNewSampleBlockEv
+0805e6bc 000000fc T _ZN5Synth26buildNewSampleBlockMcp4922Ev
+0805e7b8 00000102 T _ZN5Synth25buildNewSampleBlockCS4344EPl
+0805e8bc 00000180 T _ZN5Synth34getNumberOfFreeVoicesForThisTimbreEi
+0805ea3c 00000064 T _ZN5Synth27updateNumberOfActiveTimbresEv
+0805eaa0 00000386 T _ZN5Synth12getFreeVoiceEv
+0805ee28 000001e4 T _ZN5Synth20fixMaxNumberOfVoicesEi
+0805f00c 00000b20 T _ZN5Synth13newParamValueEiiiP16ParameterDisplayff
+0805fb2c 000000f2 T _ZN5Synth17rebuidVoiceTimbreEv
+0805fc20 000000e4 T _ZN5Synth31getNumberOfFreeOscForThisTimbreEi
+0805fd04 00000022 T _ZN5Synth24loadPreenFMPatchFromMidiEiiii
+0805fd28 0000023c T _ZN5Synth19setNewValueFromMidiEiiif
+0805ff64 0000010e T _ZN5Synth23setNewStepValueFromMidiEiiii
+08060074 0000001a T _ZN5Synth24setNewSymbolInPresetNameEiii
+08060090 00000006 T _ZN5Synth14setScalaEnableEb
+08060098 00000006 T _ZN5Synth13setScalaScaleEi
+080600a0 0000000e T _ZN5Synth20setCurrentInstrumentEi
+080600b0 00000028 T _ZN5Synth28updateGlobalTuningFromConfigEv
+080600d8 00000048 W _ZN10SynthState16propagateNoteOffEv
+08060120 00000390 T _ZN10SynthStateC1Ev	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/SynthState.cpp:708
+08060120 00000390 T _ZN10SynthStateC2Ev
+080604b0 00000118 T _ZN10SynthState29encoderTurnedForStepSequencerEiii
+080605c8 00000154 T _ZN10SynthState26encoderTurnedForArpPatternEiii
+0806071c 000000b0 T _ZN10SynthState18newRandomizerValueEii
+080607cc 00000034 T _ZN10SynthState14setScalaEnableEb
+08060800 0000003a T _ZN10SynthState13setScalaScaleEi
+0806083c 000000fc T _ZN10SynthState16loadPreenFMPatchEiPK8PFM2FileiP14OneSynthParams
+08060938 00000108 T _ZN10SynthState12loadDx7PatchEiPK8PFM2FileiP14OneSynthParams
+08060a40 0000094c T _ZN10SynthState13encoderTurnedEii
+0806138c 000000ac T _ZN10SynthState16loadPreenFMComboEPK8PFM2Filei
+08061438 00000150 T _ZN10SynthState24loadPreenFMPatchFromMidiEiiiiP14OneSynthParams
+08061588 00000054 T _ZN10SynthState12resetDisplayEv
+080615dc 00000150 T _ZNK10SynthState21isCurrentRowAvailableEv
+0806172c 0000002e T _ZN10SynthState18getRowFromOperatorEv
+0806175c 00000742 T _ZN10SynthState17twoButtonsPressedEii
+08061ea0 00000320 T _ZN10SynthState18changeSynthModeRowEii
+080621c0 000004ba T _ZN10SynthState31encoderTurnedWhileButtonPressedEiii
+0806267c 00000026 T _ZN10SynthState16isEnterNameStateEi
+080626a4 00000124 T _ZN10SynthState20setCurrentInstrumentEi
+080627c8 00000e44 T _ZN10SynthState18afterButtonPressedEv
+0806360c 00000368 T _ZN10SynthState8menuBackEv
+08063974 0000001c T _ZN10SynthState27propagateAfterNewParamsLoadEi
+08063990 00000018 T _ZN10SynthState26propagateAfterNewComboLoadEv
+080639a8 00000066 T _ZN10SynthState18propagateNewTimbreEi
+08063a10 00000088 T _ZN10SynthState10tempoClickEv
+08063a98 00000006 T _ZN10SynthState18setParamsAndTimbreEP14OneSynthParamsi
+08063aa0 0000001e T _ZN10SynthState15copySynthParamsEPcS0_
+08063ac0 00000058 T _ZN10SynthState18analyseSysexBufferEPh
+08063b18 0000001c T _ZN10SynthState16onUserChangedRowEv
+08063b34 00000016 T _ZNK10SynthState19getLastRowForTimbreEi
+08063b4c 0000001e T _ZN10SynthState19setLastRowForTimbreEii
+08063b6c 0000001c T _Z12getRandomInti
+08063b88 00000060 T _Z14getRandomFloatff
+08063be8 00000070 T _Z14getRandomShapei
+08063c58 0000002c T _Z22getRandomFrequencyTypei
+08063c84 000000dc T _Z18getRandomFrequencyi
+08063d60 000000f4 T _Z11getFineTunei
+08063e58 000016b0 T _ZN10SynthState15randomizePresetEv
+08065508 00000800 T _ZN10SynthState13buttonPressedEi
+08065d08 0000032c t _GLOBAL__sub_I_allChars
+08066034 0000000c W _ZN6LfoOscD1Ev	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Lfo.h:36
+08066034 0000000c W _ZN6LfoOscD2Ev
+08066040 0000000c W _ZN10LfoStepSeqD1Ev	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Lfo.h:36
+08066040 0000000c W _ZN10LfoStepSeqD2Ev
+0806604c 00000014 W _ZN10LfoStepSeqD0Ev
+08066060 00000014 W _ZN6LfoOscD0Ev
+08066074 00000618 W _ZN3Osc12getNextBlockEP8OscState
+0806668c 000000d4 W _ZN3Env13getNextAmpExpEP7EnvData
+08066760 0000016c T _ZN5VoiceC1Ev	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Voice.cpp:26
+08066760 0000016c T _ZN5VoiceC2Ev
+080668cc 00000070 T _ZN5VoiceD1Ev	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Voice.cpp:55
+080668cc 00000070 T _ZN5VoiceD2Ev
+0806693c 00000018 T _ZN5Voice4initEv	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Voice.cpp:59
+08066954 000000ae T _ZN5Voice11glideToNoteEs	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Voice.cpp:69
+08066a04 00000180 T _ZN5Voice16noteOnWithoutPopEssjff	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Voice.cpp:87
+08066b84 0000013c T _ZN5Voice5glideEv	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Voice.cpp:119
+08066cc0 000002b0 T _ZN5Voice6noteOnEssjff	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Voice.cpp:157
+08066f70 00000052 T _ZN5Voice21endNoteOrBeginNextOneEv
+08066fc4 0000000e T _ZN5Voice17glideFirstNoteOffEv
+08066fd4 00000578 T _ZN5Voice7noteOffEv	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Voice.cpp:242
+0806754c 00000036 T _ZN5Voice7killNowEv	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Voice.cpp:272
+08067584 0000a9a6 T _ZN5Voice9nextBlockEv	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Voice.cpp:288
+08071f2c 00000110 T _ZN5Voice16setCurrentTimbreEP6Timbre	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Voice.cpp:3687
+0807203c 0000000c W _ZN3OscD1Ev	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/SynthStateAware.h:25
+0807203c 0000000c W _ZN3OscD2Ev
+08072048 0000000c W _ZN3EnvD1Ev	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Env.h:97
+08072048 0000000c W _ZN3EnvD2Ev
+08072054 0000004c T _ZN6TimbreD1Ev	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Env.h:97
+08072054 0000004c T _ZN6TimbreD2Ev
+080720a0 00000014 W _ZN3EnvD0Ev
+080720b4 00000050 T _ZN6TimbreD0Ev
+08072104 00000014 W _ZN3OscD0Ev
+08072118 00000028 T _ZNK6Timbre21getArpeggiatorPatternEv
+08072140 000004ee T _ZN6TimbreC1Ev	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Timbre.cpp:526
+08072140 000004ee T _ZN6TimbreC2Ev
+08072630 00000158 T _ZN6Timbre4initEiP10SynthState
+08072788 00000018 T _ZN6Timbre14setVoiceNumberEii
+080727a0 0000000a T _ZN6Timbre16initVoicePointerEiP5Voice
+080727ac 00000a4c T _ZN6Timbre11preenNoteOnEhh
+080731f8 000000c8 T _ZN6Timbre6noteOnEhh
+080732c0 0000031c T _ZN6Timbre12preenNoteOffEh
+080735dc 0000004a T _ZN6Timbre7noteOffEh
+08073628 0000008a T _ZN6Timbre14stopPlayingNowEv
+080736b4 000000a8 T _ZN6Timbre12setHoldPedalEi
+0807375c 00000048 T _ZN6Timbre14setNewBPMValueEf
+080737a4 000000e4 T _ZN6Timbre19setArpeggiatorClockEf
+08073888 00000088 T _ZN6Timbre14cleanNextBlockEv
+08073910 00000abc T _ZN6Timbre24prepareMatrixForNewBlockEv
+080743cc 0000024c T _ZN6Timbre15voicesNextBlockEv
+08074618 0000008e T _ZN6Timbre5glideEv
+080746a8 0000a0e0 T _ZN6Timbre12fxAfterBlockEf
+0807e788 0000061a T _ZN6Timbre12initADSRloopEv
+0807eda4 00000170 T _ZN6Timbre16resetArpeggiatorEv
+0807ef18 000000a0 T _ZN6Timbre11setNewValueEiP16ParameterDisplayf
+0807efb8 00000010 T _ZN6Timbre15getSeqStepValueEii
+0807efc8 00000010 T _ZN6Timbre15setSeqStepValueEiii
+0807efd8 000000e0 T _ZN6Timbre17recomputeBPValuesEff
+0807f0b8 000002c0 T _ZN6Timbre16setNewEffecParamEi
+0807f378 000000bc T _ZN6Timbre17arpeggiatorNoteOnEhh
+0807f434 00000034 T _ZN6Timbre18arpeggiatorNoteOffEh
+0807f468 0000001a T _ZN6Timbre14OnMidiContinueEv
+0807f484 00000074 T _ZN6Timbre11OnMidiStartEv
+0807f4f8 0000007e T _ZN6Timbre10OnMidiStopEv
+0807f578 00000054 T _ZN6Timbre8SendNoteEhh
+0807f5cc 00000012 T _ZN6Timbre9SendLaterEhhhh
+0807f5e0 00000056 T _ZN6Timbre18SendScheduledNotesEv
+0807f638 00000064 T _ZN6Timbre10FlushQueueEv
+0807f69c 00000190 T _ZN6Timbre12StepArpeggioEv
+0807f82c 00000354 T _ZN6Timbre4TickEv
+0807fb80 0000001e T _ZN6Timbre11OnMidiClockEv
+0807fba0 0000004e T _ZN6Timbre19prepareForNextBlockEv
+0807fbf0 0000002e T _ZN6Timbre13StartArpeggioEv
+0807fc20 0000005c T _ZN6Timbre5StartEv
+0807fc7c 00000022 T _ZN6Timbre23arpeggiatorSetHoldPedalEh
+0807fca0 0000001a T _ZN6Timbre12setLatchModeEh
+0807fcbc 00000046 T _ZN6Timbre12setDirectionEh
+0807fd08 000001dc T _ZN6Timbre14lfoValueChangeEiif
+0807fee8 000003c0 T _ZN6Timbre19updateMidiNoteScaleEi
+080802a8 00000958 T _ZN6Timbre18afterNewParamsLoadEv
+08080c00 000000f4 T _ZN6Timbre17midiClockContinueEi
+08080cf4 000000f4 T _ZN6Timbre14midiClockStartEv
+08080de8 000000e8 T _ZN6Timbre25midiClockSongPositionStepEi
+08080ed0 0000004c T _ZN6Timbre22resetMatrixDestinationEf
+08080f1c 0000003c T _ZN6Timbre15setMatrixSourceE10SourceEnumf
+08080f58 00000384 T _ZN6Timbre13verifyLfoUsedEiff
+080812dc 00000034 T _Z6strcmpPKcS0_	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Common.cpp:92
+08081310 000000c4 t _ZL9dir_clearP5FATFSm	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:1678
+080813d4 00000112 t _ZL7sync_fsP5FATFS	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:1128
+080814e8 0000006e t _ZL10dir_removeP3DIR	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:2632
+08081558 00000068 t _ZL11move_windowP5FATFSm	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:1102
+080815c0 00000730 t _ZL12mount_volumePPKcPP5FATFSh	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:3375
+08081cf0 00000216 t _ZL7get_fatP7FFOBJIDm	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:1189
+08081f08 0000006a t _ZL7dir_sdiP3DIRm.constprop.13	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:1726
+08081f74 0000025e t _ZL7put_fatP5FATFSmm.part.9	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:1256
+080821d4 0000015c t _ZL12create_chainP7FFOBJIDm	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:1545
+08082330 000000dc t _ZL8dir_nextP3DIRi	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:1765
+0808240c 000002cc t _ZL11follow_pathP3DIRPKc	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:3064
+080826d8 000000b4 t _ZL8dir_readP3DIRi.constprop.11	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:2364
+0808278c 0000025c t _ZL12dir_registerP3DIR	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:2526
+080829e8 00000074 T f_mount	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:3643
+08082a5c 00000368 T f_open	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:3691
+08082dc4 000002f8 T f_read	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:3883
+080830bc 000003ae T f_write	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:3984
+0808346c 0000010a T f_sync	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:4106
+08083578 00000068 T f_close	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:4187
+080835e0 000001a0 T f_lseek	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:4402
+08083780 000000cc T f_opendir	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:4565
+0808384c 00000058 T f_closedir	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:4631
+080838a4 0000018c T f_readdir	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:4661
+08083a30 0000015e T f_stat	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:4749
+08083b90 000003a8 T f_getfree	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:4784
+08083f38 000001d8 T f_truncate	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:4874
+08084110 00000124 T f_unlink	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:4924
+08084234 000001fc T f_mkdir	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:5018
+08084430 00000224 T f_rename	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/library/ff14/ff.c:5102
+08084654 000004cc T _ZN9NoteStack6NoteOnEhh	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/midipal/note_stack.cpp:29
+08084b20 000000da T _ZN9NoteStack7NoteOffEh
+08084bfc 000000f6 T _ZN9NoteStack5ClearEv	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/midipal/note_stack.cpp:105
+08084cf4 000000a4 T _ZN14EventScheduler4InitEv	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/midipal/event_scheduler.cpp:24
+08084d98 0000006a T _ZN14EventScheduler4TickEv	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/midipal/event_scheduler.cpp:39
+08084e04 00000040 T _ZN14EventScheduler6RemoveEhh	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/midipal/event_scheduler.cpp:54
+08084e44 0000009c T _ZN14EventScheduler8ScheduleEhhhh	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/midipal/event_scheduler.cpp:69
+08084ef4 00000060 W Reset_Handler
+08084efe t CopyDataInit
+08084f06 t LoopCopyDataInit
+08084f18 t CopyCCMInit
+08084f20 t LoopCopyCCMInit
+08084f32 t FillZerobss
+08084f38 t LoopFillZerobss
+08084f42 t FillZeroCCMNoLoad
+08084f48 t LoopFillZeroCCMNoLoad
+08084f80 00000004 W ADC_IRQHandler
+08084f80 00000004 W CAN1_RX0_IRQHandler
+08084f80 00000004 W CAN1_RX1_IRQHandler
+08084f80 00000004 W CAN1_SCE_IRQHandler
+08084f80 00000004 W CAN1_TX_IRQHandler
+08084f80 00000004 W CAN2_RX0_IRQHandler
+08084f80 00000004 W CAN2_RX1_IRQHandler
+08084f80 00000004 W CAN2_SCE_IRQHandler
+08084f80 00000004 W CAN2_TX_IRQHandler
+08084f80 00000004 W CRYP_IRQHandler
+08084f80 00000004 W DCMI_IRQHandler
+08084f80 00000004 W DMA1_Stream0_IRQHandler
+08084f80 00000004 W DMA1_Stream1_IRQHandler
+08084f80 00000004 W DMA1_Stream2_IRQHandler
+08084f80 00000004 W DMA1_Stream3_IRQHandler
+08084f80 00000004 W DMA1_Stream4_IRQHandler
+08084f80 00000004 W DMA1_Stream6_IRQHandler
+08084f80 00000004 W DMA1_Stream7_IRQHandler
+08084f80 00000004 W DMA2_Stream0_IRQHandler
+08084f80 00000004 W DMA2_Stream1_IRQHandler
+08084f80 00000004 W DMA2_Stream2_IRQHandler
+08084f80 00000004 W DMA2_Stream3_IRQHandler
+08084f80 00000004 W DMA2_Stream4_IRQHandler
+08084f80 00000004 W DMA2_Stream5_IRQHandler
+08084f80 00000004 W DMA2_Stream6_IRQHandler
+08084f80 00000004 W DMA2_Stream7_IRQHandler
+08084f80 00000004 W DebugMon_Handler
+08084f80 00000004 T Default_Handler
+08084f80 00000004 W ETH_IRQHandler
+08084f80 00000004 W ETH_WKUP_IRQHandler
+08084f80 00000004 W EXTI0_IRQHandler
+08084f80 00000004 W EXTI15_10_IRQHandler
+08084f80 00000004 W EXTI1_IRQHandler
+08084f80 00000004 W EXTI2_IRQHandler
+08084f80 00000004 W EXTI3_IRQHandler
+08084f80 00000004 W EXTI4_IRQHandler
+08084f80 00000004 W EXTI9_5_IRQHandler
+08084f80 00000004 W FLASH_IRQHandler
+08084f80 00000004 W FPU_IRQHandler
+08084f80 00000004 W FSMC_IRQHandler
+08084f80 00000004 W HASH_RNG_IRQHandler
+08084f80 00000004 W I2C1_ER_IRQHandler
+08084f80 00000004 W I2C1_EV_IRQHandler
+08084f80 00000004 W I2C2_ER_IRQHandler
+08084f80 00000004 W I2C2_EV_IRQHandler
+08084f80 00000004 W I2C3_ER_IRQHandler
+08084f80 00000004 W I2C3_EV_IRQHandler
+08084f80 t Infinite_Loop
+08084f80 00000004 W OTG_FS_WKUP_IRQHandler
+08084f80 00000004 W OTG_HS_EP1_IN_IRQHandler
+08084f80 00000004 W OTG_HS_EP1_OUT_IRQHandler
+08084f80 00000004 W OTG_HS_WKUP_IRQHandler
+08084f80 00000004 W PVD_IRQHandler
+08084f80 00000004 W PendSV_Handler
+08084f80 00000004 W RCC_IRQHandler
+08084f80 00000004 W RTC_Alarm_IRQHandler
+08084f80 00000004 W RTC_WKUP_IRQHandler
+08084f80 00000004 W SDIO_IRQHandler
+08084f80 00000004 W SPI1_IRQHandler
+08084f80 00000004 W SPI2_IRQHandler
+08084f80 00000004 W SPI3_IRQHandler
+08084f80 00000004 W SVC_Handler
+08084f80 00000004 W TAMP_STAMP_IRQHandler
+08084f80 00000004 W TIM1_BRK_TIM9_IRQHandler
+08084f80 00000004 W TIM1_CC_IRQHandler
+08084f80 00000004 W TIM1_TRG_COM_TIM11_IRQHandler
+08084f80 00000004 W TIM1_UP_TIM10_IRQHandler
+08084f80 00000004 W TIM3_IRQHandler
+08084f80 00000004 W TIM4_IRQHandler
+08084f80 00000004 W TIM5_IRQHandler
+08084f80 00000004 W TIM6_DAC_IRQHandler
+08084f80 00000004 W TIM7_IRQHandler
+08084f80 00000004 W TIM8_BRK_TIM12_IRQHandler
+08084f80 00000004 W TIM8_CC_IRQHandler
+08084f80 00000004 W TIM8_TRG_COM_TIM14_IRQHandler
+08084f80 00000004 W TIM8_UP_TIM13_IRQHandler
+08084f80 00000004 W UART4_IRQHandler
+08084f80 00000004 W UART5_IRQHandler
+08084f80 00000004 W USART1_IRQHandler
+08084f80 00000004 W USART2_IRQHandler
+08084f80 00000004 W USART6_IRQHandler
+08084f80 00000004 W WWDG_IRQHandler
+08084f84 00000014 T __cxa_pure_virtual
+08084f98 00000014 T __cxa_deleted_virtual
+08084fac 00000008 T _ZdlPv
+08084fb4 0000000a T __aeabi_atexit
+08084fbe 00000008 T _ZN10__cxxabiv111__terminateEPFvvE
+08084fc8 00000010 T _ZSt9terminatev
+08084fd8 00000008 T _ZN10__cxxabiv112__unexpectedEPFvvE
+08084fe0 00000010 T _ZSt10unexpectedv
+08084ff0 00000010 T _ZSt13set_terminatePFvvE
+08085000 00000010 T _ZSt14set_unexpectedPFvvE
+08085010 00000098 T _ZN9__gnu_cxx27__verbose_terminate_handlerEv
+080850a8 0000001a T __cxa_current_exception_type
+080850c4 00000008 T __cxa_get_globals_fast
+080850cc 00000008 T __cxa_get_globals
+080850d4 0000008c t d_make_comp
+08085160 0000002e t d_make_name
+08085190 0000004c t d_number
+080851dc 0000002e t d_number_component
+0808520c 000000aa t d_cv_qualifiers
+080852b8 0000002e t d_compact_number
+080852e8 00000042 t d_template_param
+0808532c 0000001c t d_discriminator
+08085348 00000178 t d_substitution
+080854c0 0000003c t d_append_char
+080854fc 00000066 t d_lookup_template_argument
+08085564 00000080 t d_find_pack
+080855e4 00000084 t d_source_name
+08085668 00000044 t d_call_offset
+080856ac 0000012a t d_append_string
+080857d8 000000ca t d_expr_primary
+080858a4 000000ba t d_template_args
+08085960 00000290 t d_name
+08085bf0 000006d8 t d_type
+080862c8 000000ec t d_operator_name
+080863b4 00000078 t d_parmlist
+0808642c 00000230 t d_unqualified_name
+0808665c 000003c4 t d_expression
+08086a20 0000005e t d_exprlist
+08086a80 0000003c t d_bare_function_type
+08086abc 0000063a t d_encoding
+080870f8 00000078 t d_growable_string_callback_adapter
+08087170 00005bd8 t d_print_comp
+0808cd48 00000e5c t d_print_mod
+0808dba4 0000061c t d_print_mod_list
+0808e1c0 000001b8 t d_print_array_type
+0808e378 000001d0 t d_print_function_type
+0808e548 00000152 t d_print_cast
+0808e69c 00000134 t d_print_expr_op
+0808e7d0 0000009e t d_print_subexpr
+0808e870 00000250 t d_demangle_callback.constprop.8
+0808eac0 000000c8 T __cxa_demangle
+0808eb88 0000001c T __gcclibcxx_demangle_callback
+0808eba4 00000074 T cosf
+0808ec18 0000008c T floorf
+0808eca4 0000005a T roundf
+0808ed00 00000110 T exp
+0808ee10 00000366 T pow
+0808f178 00000334 T __ieee754_exp
+0808f4b0 00000b50 T __ieee754_pow
+08090000 00000216 T __ieee754_sqrt
+08090218 0000028c T __ieee754_rem_pio2f
+080904a4 00000104 T __kernel_cosf
+080905a8 00000a32 T __kernel_rem_pio2f
+08090fdc 0000008c T __kernel_sinf
+08091068 00000012 T fabs
+0809107c 00000010 T finite
+0809108c 00000070 T __fpclassifyd
+080910fc 00000004 T matherr
+08091100 00000010 T nan
+08091110 00000120 T rint
+08091230 00000120 T scalbn
+08091350 0000000e T fabsf
+08091360 000000cc T scalbnf
+0809142c 00000022 T copysign
+08091450 0000001a T copysignf
+0809146c T __aeabi_drsub
+08091474 0000027a T __aeabi_dsub
+08091474 0000027a T __subdf3
+08091478 00000276 T __adddf3
+08091478 00000276 T __aeabi_dadd
+080916f0 0000001e T __aeabi_ui2d
+080916f0 0000001e T __floatunsidf
+08091710 00000022 T __aeabi_i2d
+08091710 00000022 T __floatsidf
+08091734 0000003a T __aeabi_f2d
+08091734 0000003a T __extendsfdf2
+08091770 0000006a T __aeabi_ul2d
+08091770 0000006a T __floatundidf
+08091780 0000005a T __aeabi_l2d
+08091780 0000005a T __floatdidf
+080917dc 00000254 T __aeabi_dmul
+080917dc 00000254 T __muldf3
+08091a30 000001d0 T __aeabi_ddiv
+08091a30 000001d0 T __divdf3
+08091c00 0000008a T __gedf2
+08091c00 0000008a T __gtdf2
+08091c08 00000082 T __ledf2
+08091c08 00000082 T __ltdf2
+08091c10 0000007a T __cmpdf2
+08091c10 0000007a T __eqdf2
+08091c10 0000007a T __nedf2
+08091c8c 00000020 T __aeabi_cdrcmple
+08091c9c 00000010 T __aeabi_cdcmpeq
+08091c9c 00000010 T __aeabi_cdcmple
+08091cac 00000012 T __aeabi_dcmpeq
+08091cc0 00000012 T __aeabi_dcmplt
+08091cd4 00000012 T __aeabi_dcmple
+08091ce8 00000012 T __aeabi_dcmpge
+08091cfc 00000012 T __aeabi_dcmpgt
+08091d10 0000004e T __aeabi_d2iz
+08091d10 0000004e T __fixdfsi
+08091d60 0000009e T __aeabi_d2f
+08091d60 0000009e T __truncdfsf2
+08091e00 00000014 T __register_exitproc
+08091e14 0000000e T abort
+08091e22 00000016 T __cxa_atexit
+08091e38 0000000c T __errno
+08091e44 0000002c T exit
+08091e70 0000002c T __libc_fini_array
+08091e9c 00000060 T _fputs_r
+08091efc 00000014 T fputs
+08091f10 000002b6 T __sfvwrite_r
+080921c8 0000004c T __libc_init_array
+08092214 00000010 T malloc
+08092224 00000010 T free
+08092234 00000094 T _malloc_r
+080922c8 0000001c T memchr
+080922e4 0000001e T memcmp
+08092302 00000012 T memcpy
+08092314 00000034 T memmove
+08092348 00000010 T memset
+08092358 00000014 T realloc
+0809236c 00000048 T _realloc_r
+080923b4 00000020 T _sbrk_r
+080923d4 0000002c T _init_signal_r
+08092400 00000030 T _signal_r
+08092430 00000050 T _raise_r
+08092480 0000004a T __sigtramp_r
+080924cc 00000010 T raise
+080924dc 00000014 T signal
+080924f0 0000000c T _init_signal
+080924fc 00000010 T __sigtramp
+0809250c 00000024 T _kill_r
+08092530 00000004 T _getpid_r
+08092534 00000040 T _siprintf_r
+08092534 00000040 T _sprintf_r
+08092574 00000048 T siprintf
+08092574 00000048 T sprintf
+080925bc 00000016 T strcmp
+080925d2 00000010 T strlen
+080925e2 0000002e T strncmp
+08092610 000000ae T __ssputc_r
+080926be 000000fa T __ssprint_r
+080927b8 000001f4 T _svfiprintf_r
+080927b8 000001f4 T _svfprintf_r
+080929ac 0000001c T write
+080929c8 000000de T _printf_common
+08092aa8 0000024c T _printf_i
+08092cf4 00000024 T _write_r
+08092d18 000000ec T __swsetup_r
+08092e04 0000007c T __do_register_exitproc
+08092e80 000000a0 T __call_exitprocs
+08092f20 0000014c T _fflush_r
+0809306c 00000024 T fflush
+08093090 00000004 t __fp_lock
+08093094 00000004 t __fp_unlock
+08093098 00000032 T _cleanup_r
+080930cc 00000048 t std.isra.0
+08093114 0000002a T __sfmoreglue
+08093140 0000000c T _cleanup
+0809314c 00000058 T __sinit
+080931a4 00000078 T __sfp
+0809321c 00000002 T __sfp_lock_acquire
+0809321e 00000002 T __sfp_lock_release
+08093220 00000002 T __sinit_lock_acquire
+08093222 00000002 T __sinit_lock_release
+08093224 00000014 T __fp_lock_all
+08093238 00000014 T __fp_unlock_all
+0809324c 00000088 T _free_r
+080932d4 00000040 T _fwalk
+08093314 00000044 T _fwalk_reent
+08093358 000000a8 T __smakebuf_r
+08093400 00000012 T _malloc_usable_size_r
+08093412 0000001a T cleanup_glue
+0809342c 000000ac T _reclaim_reent
+080934d8 00000030 T _wrapup_reent
+08093508 00000022 T __sread
+0809352a 00000004 T __seofread
+0809352e 0000003c T __swrite
+0809356a 00000024 T __sseek
+0809358e 00000008 T __sclose
+08093598 00000020 T _close_r
+080935b8 00000024 T _fstat_r
+080935dc 00000020 T _isatty_r
+080935fc 00000024 T _lseek_r
+08093620 00000024 T _read_r
+08093644 00000012 T _close
+08093658 00000012 T _fstat
+0809366c 00000012 T _getpid
+08093680 00000010 T _isatty
+08093690 00000012 T _kill
+080936a4 00000012 T _lseek
+080936b8 00000012 T _read
+080936cc 00000034 T _sbrk
+08093700 00000012 T _write
+08093714 00000002 T _exit
+08093718 T _init
+08093724 T _fini
+08093730 00000010 V _ZTV13LiquidCrystal
+08093740 00000020 V _ZTV16EncodersListener
+08093760 00000010 V _ZTV7Storage
+08093770 00000010 V _ZTV6Hexter
+08093974 00000003 t CSWTCH.44
+08093a38 00000180 T midiConfig	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/hardware/Menu.cpp:44
+08093bb8 00000290 T allMenus	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/hardware/Menu.cpp:219
+080941f8 00000014 V _ZTV15SynthStateAware
+08094210 00000018 V _ZTV10VisualInfo
+08094228 00000038 V _ZTV18SynthParamListener
+08094260 00000018 V _ZTV17SynthMenuListener
+080942b8 0000009c T _ZTV9FMDisplay
+08094a68 00000028 t CSWTCH.83
+08094ac8 00000018 T _ZTV9ComboBank
+08094ae0 00000018 T _ZTV17ConfigurationFile
+08094b68 00000018 T _ZTV12DX7SysexFile
+08094b90 00000018 T _ZTV9PatchBank
+08094bb8 00000018 T _ZTV9ScalaFile
+08094bd0 00000010 T _ZTV15FileSystemUtils
+08094c60 00000018 T _ZTV15PreenFMFileType
+08094c78 00000018 T _ZTV12UserWaveform
+08094ce0 00000018 V _ZTV11SysexSender
+08094cf8 00000074 T _ZTV11MidiDecoder
+08094d70 00000014 T _ZTV3Lfo
+08094d88 00000014 V _ZTV6LfoEnv
+08094da0 00000014 V _ZTV7LfoEnv2
+08094db8 00000380 T preenMainPreset	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Presets.cpp:98
+08095138 00000380 T defaultPreset	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/Presets.cpp:23
+080954b8 00000014 V _ZTV17SynthParamChecker
+080954d0 00000098 T _ZTV5Synth
+080955b0 0000000c t _ZL13allEngineRows
+080955bc 00000003 t _ZL17oscTypeNamesOrder
+080960bc 00000032 t _ZL17matrixTargetOrder
+080960f0 0000000c t CSWTCH.197
+080960fc 0000000c t CSWTCH.198
+08096108 0000000c t CSWTCH.199
+08096114 00000032 t _ZL20matrixTargetPosition
+08096148 00000031 t _ZL12filtersOrder
+0809617c 00000031 t _ZL15filtersPosition
+080961b0 00000020 T _ZTV10SynthState
+080961d0 00000015 t _ZL17matrixSourceOrder
+080961e8 0000000e t _ZL18oscShapeNamesOrder
+080961f8 00000015 t _ZL20matrixSourcePosition
+08096210 0000000c t CSWTCH.200
+0809621c 00000003 t _ZL20oscTypeNamesPosition
+08096220 0000000e t _ZL21oscShapeNamesPosition
+08096230 00000014 V _ZTV6LfoOsc
+08096248 00000014 V _ZTV10LfoStepSeq
+08096290 00000014 V _ZTV3Osc
+080962a8 00000010 V _ZTV3Env
+080962b8 00000011 t _ZL24midi_clock_tick_per_step
+080962cc 00000a00 t _ZL11filterpoles
+08096cd0 00000010 T _ZTV6Timbre
+08096dac 000000c4 t standard_subs
+08096e70 00000294 t cplus_demangle_builtin_types
+08097104 000003a0 t cplus_demangle_operators
+08097ab8 00000010 t halF
+08097ac8 00000010 t ln2LO
+08097ad8 00000010 t ln2HI
+08097ae8 00000010 t dp_h
+08097af8 00000010 t dp_l
+08097b08 00000010 t bp
+08097b18 00000080 t npio2_hw
+08097b98 00000318 t two_over_pi
+08097eb0 0000000c t init_jk
+08097ebc 0000002c t PIo2
+08097ee8 00000010 t TWO52
+08097efc 00000004 T _global_impure_ptr
+08097f34 00000020 T __sf_fake_stdin
+08097f54 00000020 T __sf_fake_stdout
+08097f74 00000020 T __sf_fake_stderr
+08097f94 t __EH_FRAME_BEGIN__
+08097f94 t __FRAME_END__
+08097f98 A __exidx_start
+08097fa0 A __etext
+08097fa0 A __exidx_end
+08097fa0 A _sidata
+0809f3f8 A _siccm
 10000000 D _sccm
 10000000 00000004 D preenTimer	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/PreenFM_irq.cpp:29
 10000004 00000040 D expValues	D:\Eigene Dateien\Eigene Dokumente\Playground\preenfm2-vosim-firmware-project\preenfm2-vosim-editor-firmware/src/synth/LfoStepSeq.cpp:22

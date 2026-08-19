@@ -1,7 +1,7 @@
 # Firmware safety review, editor remote store, 3.00 alpha
 
 Independent second pass over the new store data path, done after the implementation, on
-the working commit `bbbe64156a0f81c251d2d619e0aafb4eab7388d6`.
+the working commit `f7cdfcf444f3442be3e0a823ef25d66b316f1dbf`.
 
 **Every check below is static or simulated. No hardware test was performed, and none is
 claimed.**
@@ -107,28 +107,70 @@ dedicated channel per timbre.
 **Risk:** a partial sequence writes something, or writes to a stale target.
 
 The existing state machine acts on CC 38 and keeps `paramMSB`, `paramLSB`, `valueMSB` and
-`valueLSB` as sticky per timbre state. A sequence of `CC99=4, CC98=2, CC38=x` with **no**
-CC 6 would therefore have used whatever `valueMSB` an unrelated earlier NRPN had left
-behind, and could have addressed an arbitrary bank.
+`valueLSB` as sticky per timbre state. Three separate holes had to be closed here, and two
+of them were **missed by the first version of this review**. See section 12 for what went
+wrong.
 
-`editorValueMsbSeen[timbre]` closes this: cleared by CC 99, which is what starts a new
-NRPN, and set by CC 6. A store without a fresh CC 6 is refused with status 5 and writes
-nothing. The same flag also blocks a store reached through the NRPN increment and decrement
-messages CC 96 and CC 97, which set `readyToSend` without ever passing through CC 6.
+`editorValueMsbSeen[timbre]` now means: *the value msb is fresh and has not been consumed.*
+It is
+
+- **set** by CC 6,
+- **cleared** by CC 99, which starts a new nrpn,
+- **cleared** by CC 96 and CC 97,
+- **cleared** after every page 4 dispatch, in `controlChange()`.
+
+A store only executes when the flag is true, so it can only ever fire on a **CC 38 that
+followed a CC 6**.
+
+### 4.1 Missing value msb
+
+`CC99=4, CC98=2, CC38=x` with no CC 6 would have used whatever `valueMSB` an unrelated
+earlier nrpn left behind, addressing an arbitrary bank. Refused with status 5.
 
 Naively zeroing `valueMSB` on CC 99 instead would have been worse: a missing CC 6 would
 then have silently resolved to bank 0.
 
+### 4.2 Sticky state after a completed command
+
+After a store, `paramMSB` and `paramLSB` still hold page 4 / LSB 2. Clearing the flag only
+on CC 99 left it **true** after the command, so a later lone CC 38 re-entered the store
+handler with a valid looking flag and wrote a neighbouring slot, reporting success:
+
+```
+store bank 1 preset 9      -> written, status OK
+then a bare CC38=10        -> ALSO written, status OK      (before the fix)
+```
+
+The flag is now cleared after every page 4 dispatch, for **every** addressed timbre. That
+placement matters: it is outside `decodeNrpn()` and outside the `editorCommandDoneThisEvent`
+guard, so a command rejected on an ambiguous channel still consumes the value on all four
+timbres, not only on the one that emitted the error.
+
+### 4.3 Increment and decrement
+
+CC 96 and CC 97 set `readyToSend` without carrying a data entry byte at all. They derive the
+value lsb from whatever was there before, so they could store a preset number that no
+received byte ever specified:
+
+```
+CC99=0, CC98=44, CC6=0, CC38=42    an ordinary parameter, leaves valueLSB = 42
+CC99=4, CC98=2,  CC6=1, CC96       a store command that never sends CC38
+-> wrote bank 1 preset 43, status OK                        (before the fix)
+```
+
+Both now clear the flag, so neither can reach `editorStore()`.
+
+### 4.4 Not over-strict
+
+The regular nrpn idiom of keeping the selected parameter and resending only a fresh
+CC 6 / CC 38 pair still stores normally. There is a dedicated test for that, so a later
+tightening cannot quietly break it.
+
 A sequence truncated before CC 38 never reaches `decodeNrpn()` at all, so nothing happens
 and nothing is answered.
 
-The flag is written in two existing `case` labels and read only on the editor page. The
-ordinary parameter path never consults it, so parameter NRPN behaviour is bit for bit
-unchanged.
-
-**Verdict: closed.** Simulated in case 08, three variants.
-
----
+**Verdict: closed.** Simulated in cases 08, 09b, 09c, 09d, 09e, and asserted against the
+source text so removing the invalidation from either CC 96 or CC 97 fails the test.
 
 ## 5. Collision with existing parameters
 
@@ -221,14 +263,16 @@ Three paths were examined:
 - *repeated identical command.* A second store to the same target simply writes the same
   data again. It is idempotent, answers once, and touches no other slot. Simulated in
   case 09.
-- *sticky NRPN state.* After a store, `paramMSB` and `paramLSB` still hold page 4 / LSB 2.
-  A later stray CC 38 on the same channel would re-trigger the store handler — but
-  `editorValueMsbSeen` was cleared, so it is refused with status 5 rather than writing.
-  This is a real hardening, not a theoretical one: it is the same mechanism as section 4.
+- *sticky nrpn state.* This is where the first version of this review was **wrong**. It
+  claimed the value flag "was cleared" after a store and that a stray CC 38 would therefore
+  be refused. No such clearing existed. See sections 4.2, 4.3 and 12.
 
-**Verdict: closed.**
+Two commands sent back to back must both execute: each control change is its own midi
+event, so `midiEventReceived()` clears the per event guard for every message. Covered by
+case 09f, which was added after the model was found to reset that guard only once per
+replayed sequence.
 
----
+**Verdict: closed after the fix in `f7cdfcf`.**
 
 ## 9. Full dump regression
 
@@ -254,7 +298,7 @@ A store does not trigger a dump, and a program change still does not trigger a d
 
 **Risk:** the VOSIM algorithms 29-32 or the LFO shapes 6-8 are affected.
 
-The complete diff `6ed604a…bbbe641` touches seven files:
+The complete diff `6ed604a…f7cdfcf` touches seven files:
 
 ```
 Makefile                        version strings only
@@ -353,3 +397,34 @@ algorithms and LFO shapes.
 **Recommendation: do not flash until the owner explicitly releases it.** The store writes
 immediately and without confirmation, by design, so a first hardware test should target a
 throwaway bank on a usb key whose contents are backed up.
+
+---
+
+## 12. What the first version of this review got wrong
+
+This document is a safety review, so its own failures belong in it.
+
+The first version, published with the initial 3.00 alpha artifacts, stated in section 8
+that `editorValueMsbSeen` was cleared after a store. **It was not.** The flag was only ever
+cleared by CC 99. The consequence was a real defect in the shipped binary
+`5fe73ed8b155da8f61eea8e91884ea3cb0e9fab064296b0f292ae144009b7737`: after a valid store, a
+single stray CC 38 wrote the edit buffer into a second preset slot and reported success.
+
+The claim was written from intent rather than from the code. Nothing in the test suite
+covered the state *after* a completed command, so nothing contradicted it.
+
+A follow up fix cleared the flag after every page 4 dispatch. Reviewing **that** fix
+independently surfaced a second hole of the same class: the flag tracked CC 6 only, never
+CC 38, so CC 96 and CC 97 could still store a derived preset number. Section 4.3.
+
+Three changes were made so this class of error is harder to repeat:
+
+1. the flag's meaning is now written down at its declaration, and the code matches it;
+2. the test suite asserts against the **source text** of `controlChange()`, so removing the
+   invalidation from CC 96, CC 97 or the dispatch path fails the test rather than silently
+   passing;
+3. every new assertion was checked by negative control — the fix was removed again to
+   confirm the test actually fails without it.
+
+Two of the three defects in this area were found by review of a previous review, not by the
+tests. That is worth remembering when weighing how much the green test output is worth.

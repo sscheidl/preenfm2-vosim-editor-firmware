@@ -13,7 +13,7 @@ Built on 2026-08-19, Windows 11 Pro 10.0.26200, Git Bash.
 | origin | `https://github.com/sscheidl/preenfm2-vosim-editor-firmware.git` (private, not a fork) |
 | base commit | `6ed604a43636c00bfbac9613c8f5a79a7582dfa7` — "vosim sync, sigma fix" |
 | working branch | `feature/editor-remote-store` |
-| working commit | `bbbe64156a0f81c251d2d619e0aafb4eab7388d6` |
+| working commit | `f7cdfcf444f3442be3e0a823ef25d66b316f1dbf` |
 
 The remote `vosim` head was checked before any work started and matched the expected base
 commit `6ed604a…` exactly, so no deviation had to be investigated. The push URL of
@@ -92,8 +92,8 @@ Both targets built successfully, exit code 0.
 
 | artifact | size (bytes) |
 |---|---:|
-| `p2_3.00alpha.bin` | 415 056 |
-| `p2_3.00alphao.bin` | 415 056 |
+| `p2_3.00alpha.bin` | 415 120 |
+| `p2_3.00alphao.bin` | 415 120 |
 | `p2_3.00alpha.elf` | 2 384 364 |
 | `p2_3.00alphao.elf` | 2 384 364 |
 
@@ -104,8 +104,8 @@ like comparison.
 
 | | base 2.21b | new 3.00 alpha | delta |
 |---|---:|---:|---:|
-| `.bin` size | 413 936 | 415 056 | **+1 120** |
-| `.text` | 359 168 | 360 288 | +1 120 |
+| `.bin` size | 413 936 | 415 120 | **+1 184** |
+| `.text` | 359 168 | 360 352 | +1 184 |
 | `.data` | 54 768 | 54 768 | 0 |
 | `.bss` | 100 208 | 100 216 | +8 |
 | `.ccm` (`0x6198`) | 24 984 | 24 984 | 0 |
@@ -126,7 +126,7 @@ FLASH  (rx)  : ORIGIN = 0x08040000, LENGTH = 768K   =  786 432
 
 | region | used | limit | headroom |
 |---|---:|---:|---:|
-| FLASH (`.bin`) | 415 056 | 786 432 | 52.8 % used, 371 376 free |
+| FLASH (`.bin`) | 415 120 | 786 432 | 52.8 % used, 371 312 free |
 | RAM (`.data` + `.jcr` + `.bss`) | 96 072 | 114 688 | 83.8 % used, 18 616 free |
 | CCMRAM (`.ccm` + `.ccmnoload`) | 58 916 | 65 536 | 89.9 % used, 6 620 free, unchanged |
 
@@ -167,14 +167,25 @@ changed. The complete build logs are the raw make output referenced in section 7
 
 ## 6. SHA-256 checksums
 
+> **Superseded builds, do not flash.** Two earlier 3.00 alpha binaries were produced during
+> development and both contain a store defect described in `FIRMWARE_SAFETY_REVIEW.md`
+> section 12. Neither is in this directory any more, but if a copy is lying around, discard
+> it:
+>
+> ```
+> 5fe73ed8b155da8f61eea8e91884ea3cb0e9fab064296b0f292ae144009b7737   lone CC38 double store
+> 7d77d70db68afd7372145cde2f6a4490c4f3ee4ad94e1bf59c8492c15b3d33df   CC96/97 derived store
+> ```
+
+
 See `SHA256SUMS` in this directory:
 
 ```
-5fe73ed8b155da8f61eea8e91884ea3cb0e9fab064296b0f292ae144009b7737  p2_3.00alpha.bin
-5fe73ed8b155da8f61eea8e91884ea3cb0e9fab064296b0f292ae144009b7737  p2_3.00alphao.bin
-39ec93659445e228edf7eb92a14459eab48e4f8423436fbc4ebbf51a1708ae5d  p2_3.00alpha.elf
-39ec93659445e228edf7eb92a14459eab48e4f8423436fbc4ebbf51a1708ae5d  p2_3.00alphao.elf
-a7ecee9a98e8a5b2bfe2bc4a6132ffd40ca428a61f83d4cfa08257483e9bea6c  editor-protocol-3.00alpha.patch
+da9944f01a6f87390f33b5b58000698ba7cb4c80a1c687f2b3ec9f022b65e82e  p2_3.00alpha.bin
+da9944f01a6f87390f33b5b58000698ba7cb4c80a1c687f2b3ec9f022b65e82e  p2_3.00alphao.bin
+e2afba54fc34674dc703adeb7f4db8cb8bd8d27f5b53761c8998ad6f68b70129  p2_3.00alpha.elf
+e2afba54fc34674dc703adeb7f4db8cb8bd8d27f5b53761c8998ad6f68b70129  p2_3.00alphao.elf
+ef840dd403e0eeadcfd49caf5ef7295d0cfbfff42ee28a40e9dbfa9ca3a26fa0  editor-protocol-3.00alpha.patch
 ```
 
 Base build, for reference:
@@ -199,11 +210,12 @@ All inside the repository, under `release/editor-protocol-3.00alpha/`:
 | `p2_3.00alpha_symbol.txt` | symbol map, regular |
 | `p2_3.00alphao_symbol.txt` | symbol map, overclock |
 | `SHA256SUMS` | checksums |
-| `editor-protocol-3.00alpha.patch` | full git diff `6ed604a…bbbe641` |
+| `editor-protocol-3.00alpha.patch` | full git diff `6ed604a…f7cdfcf` |
 | `EDITOR_PROTOCOL.md` | protocol specification |
 | `BUILD_REPORT.md` | this file |
 | `FIRMWARE_SAFETY_REVIEW.md` | independent review of the store data path |
 | `CHANGELOG_EDITOR_PRERELEASE.md` | change log |
+| `HARDWARE_SMOKE_TEST.md` | procedure for the first hardware test |
 
 The build directory `build/` is git ignored and holds the same binaries after a build.
 

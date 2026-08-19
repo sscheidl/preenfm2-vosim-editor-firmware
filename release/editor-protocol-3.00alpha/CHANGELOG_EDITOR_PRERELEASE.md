@@ -3,7 +3,7 @@
 ## 3.00 alpha — 2026-08-19 — experimental pre-release, not hardware tested
 
 Base: `pvig/preenfm2` branch `vosim`, commit `6ed604a43636c00bfbac9613c8f5a79a7582dfa7`
-(firmware `2.21b`). Work commit `bbbe64156a0f81c251d2d619e0aafb4eab7388d6`.
+(firmware `2.21b`). Work commit `f7cdfcf444f3442be3e0a823ef25d66b316f1dbf`.
 
 ### Added
 
@@ -20,7 +20,29 @@ Base: `pvig/preenfm2` branch `vosim`, commit `6ed604a43636c00bfbac9613c8f5a79a75
   not writable, invalid slot, ambiguous midi channel, storage error, and protocol error.
   Success is only reported after the write actually completed.
 - `test/host/protocol_sim_test.py` — a simulation of the decode path that reads its
-  constants out of `src/midi/MidiDecoder.h`. 23 cases, 89 checks. Not a hardware test.
+  constants out of `src/midi/MidiDecoder.h` and the bank count out of
+  `src/filesystem/PreenFMFileType.h`, so the model cannot drift from the firmware. It also
+  asserts against the source text of `controlChange()`, so removing the value invalidation
+  from CC 96, CC 97 or the dispatch path fails the test instead of silently passing.
+  28 cases, 115 checks. Every new assertion was checked by negative control. Not a hardware
+  test.
+
+### Fixed during development, before any hardware test
+
+Two defects of the same class were found and closed in the store guard. Both allowed a
+write to a preset slot that no received byte had addressed, and both answered
+`EDITOR_STATUS_OK`. Details and the review failure behind them: `FIRMWARE_SAFETY_REVIEW.md`
+section 4 and section 12.
+
+- After a completed page 4 command, the value stayed valid, so a **lone CC 38** re-entered
+  the store handler and wrote a neighbouring slot. The value is now consumed after every
+  page 4 dispatch, on every addressed timbre.
+- **CC 96 and CC 97**, the NRPN increment and decrement, set the dispatch flag without
+  carrying a data entry byte, deriving the preset number from an unrelated earlier NRPN.
+  They now invalidate the value and can never reach the store.
+
+Two binaries produced during development carry these defects and must not be flashed:
+`5fe73ed8…f0dc` and `7d77d70d…33df`.
 
 ### Changed
 

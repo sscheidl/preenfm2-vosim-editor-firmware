@@ -7,8 +7,9 @@
 > simulation. **It has never run on a PreenFM2.** No successful hardware test is claimed.
 >
 > Do not flash it until the repository owner explicitly releases it. When that happens,
-> back up the usb key first: the new store command writes immediately, by design, with no
-> confirmation step.
+> follow [`HARDWARE_SMOKE_TEST.md`](release/editor-protocol-3.00alpha/HARDWARE_SMOKE_TEST.md):
+> back up the usb key first, and keep the first store on a throwaway bank. The store command
+> writes immediately, by design, with no confirmation step.
 
 ---
 
@@ -95,6 +96,7 @@ It must not infer support from the firmware version string.
 | `BUILD_REPORT.md` | toolchain, commands, sizes, warnings, what could not be tested |
 | `FIRMWARE_SAFETY_REVIEW.md` | independent review of the store data path |
 | `CHANGELOG_EDITOR_PRERELEASE.md` | change log |
+| `HARDWARE_SMOKE_TEST.md` | step by step first hardware test, read this before flashing |
 
 ---
 

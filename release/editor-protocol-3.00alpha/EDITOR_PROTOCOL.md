@@ -59,6 +59,25 @@ The 14 bit value is `value = (mm << 7) | vv`, range 0..16383. The firmware acts 
 which is what completes the sequence, exactly as it does for ordinary parameter NRPNs.
 Running status is accepted, the byte level decoder is unchanged.
 
+### Completeness rule
+
+A store only executes on a **CC 38 that followed a CC 6**. Specifically:
+
+- CC 99 starts a new NRPN and invalidates the previous value;
+- CC 6 makes the value msb fresh;
+- CC 38 completes the sequence and dispatches;
+- once a page 4 command has been dispatched, its value is consumed. A second CC 38 alone
+  will **not** repeat it, it answers status 5;
+- the NRPN increment and decrement messages **CC 96 and CC 97 never store**. They carry no
+  data entry byte and derive the value from whatever was there before, so on page 4 they
+  always answer status 5. Use them for ordinary parameters only.
+
+Resending only a fresh `CC 6` + `CC 38` pair, keeping the previously selected page and
+command, is a valid way to issue another store. Resending all four messages is also valid
+and is what an editor should normally do.
+
+Queries are unaffected by this rule: their value is ignored.
+
 ---
 
 ## 3. Requests, editor to firmware
