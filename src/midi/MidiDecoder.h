@@ -253,8 +253,10 @@ private:
     // editor command is executed once per midi event and not once per addressed timbre.
     int currentEventTimbreCount;
     bool editorCommandDoneThisEvent;
-    // Set when CC6 of the current nrpn sequence has been received, cleared by CC99.
-    // A store is only executed on a complete 99/98/6/38 sequence.
+    // True while the value msb of the current nrpn is fresh: set by CC6, cleared by
+    // CC99, by the increment/decrement CC96 and CC97 which carry no data entry byte,
+    // and once a page 4 command has consumed the value. A store therefore only ever
+    // fires on a CC38 that followed a CC6, never on a stale or derived value.
     bool editorValueMsbSeen[NUMBER_OF_TIMBRES];
     bool omniOn[NUMBER_OF_TIMBRES];
     unsigned char runningStatus;

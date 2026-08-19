@@ -594,6 +594,10 @@ void MidiDecoder::controlChange(int timbre, MidiEvent& midiEvent) {
             } else {
                 this->currentNrpn[timbre].valueLSB ++;
             }
+            // Increment carries no data entry byte: the value lsb it derives from is
+            // whatever an earlier nrpn left behind, so this is never a complete editor
+            // command and must not be able to address a preset slot.
+            this->editorValueMsbSeen[timbre] = false;
             this->currentNrpn[timbre].readyToSend = true;
             break;
         case 97:
@@ -604,6 +608,8 @@ void MidiDecoder::controlChange(int timbre, MidiEvent& midiEvent) {
             } else {
                 this->currentNrpn[timbre].valueLSB --;
             }
+            // Same as the increment above: no data entry byte, never a complete command.
+            this->editorValueMsbSeen[timbre] = false;
             this->currentNrpn[timbre].readyToSend = true;
             break;
         default:
@@ -612,6 +618,14 @@ void MidiDecoder::controlChange(int timbre, MidiEvent& midiEvent) {
 
         if (this->currentNrpn[timbre].readyToSend) {
             decodeNrpn(timbre);
+            // Page 4 commands consume the complete 14-bit value.  Without clearing this
+            // flag, a later lone CC38 (or CC96/97 increment/decrement) would reuse the
+            // preceding store command and could overwrite another preset slot.  Do this
+            // for every addressed timbre, including the ones skipped by the per-event
+            // command guard on an ambiguous/global channel.
+            if (this->currentNrpn[timbre].paramMSB == EDITOR_NRPN_PAGE) {
+                this->editorValueMsbSeen[timbre] = false;
+            }
             this->currentNrpn[timbre].readyToSend = false;
         }
     }

@@ -32,6 +32,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
 HEADER = os.path.join(REPO, "src", "midi", "MidiDecoder.h")
 DECODER = os.path.join(REPO, "src", "midi", "MidiDecoder.cpp")
+FILETYPES = os.path.join(REPO, "src", "filesystem", "PreenFMFileType.h")
 
 failures = []
 checks = [0]
@@ -95,8 +96,19 @@ PAGE = C["EDITOR_NRPN_PAGE"]
 REQUESTS = {C["EDITOR_REQ_CAPABILITY"], C["EDITOR_REQ_POSITION"], C["EDITOR_REQ_STORE"]}
 RESPONSES = {v for k, v in C.items() if k.startswith("EDITOR_RSP_")}
 
-# banks present on the usb key, 128 presets each
-NUMBEROFPREENFMBANKS = 64
+def read_bank_count():
+    """PreenFMFileType.h defines NUMBEROFPREENFMBANKS twice: the real value under
+    #ifndef BOOTLOADER and a stub 1 for the bootloader build. The firmware build uses
+    the larger one, so this must not be hardcoded here or it silently drifts."""
+    src = open(FILETYPES, encoding="utf-8", errors="replace").read()
+    values = [int(v) for v in re.findall(r"#define\s+NUMBEROFPREENFMBANKS\s+(\d+)", src)]
+    if not values:
+        raise SystemExit("NUMBEROFPREENFMBANKS not found in PreenFMFileType.h")
+    return max(values)
+
+
+# banks addressable on the usb key, 128 presets each
+NUMBEROFPREENFMBANKS = read_bank_count()
 
 
 # ---------------------------------------------------------------------------
@@ -140,6 +152,19 @@ def test_source_really_dispatches_the_page():
     ok_at = store.index("EDITOR_STATUS_OK")
     check(save_at < ok_at, "EDITOR_STATUS_OK is sent before savePreenFMPatch() is called")
     check("loadPreenFMPatch" not in store, "editorStore() reads the target before writing it")
+    ready = src[src.index("if (this->currentNrpn[timbre].readyToSend)"):]
+    ready = ready[:ready.index("\n        }") + len("\n        }")]
+    check("decodeNrpn(timbre)" in ready and
+          "editorValueMsbSeen[timbre] = false" in ready and
+          ready.index("decodeNrpn(timbre)") < ready.index("editorValueMsbSeen[timbre] = false"),
+          "page 4 value is not consumed after dispatch")
+    # CC96 and CC97 set readyToSend without ever carrying a data entry byte, so they must
+    # invalidate the value as well, otherwise they can store a derived preset number.
+    for cc in ("96", "97"):
+        case = src[src.index("        case %s:" % cc):]
+        case = case[:case.index("break;")]
+        check("editorValueMsbSeen[timbre] = false" in case,
+              "CC%s does not invalidate the editor value flag" % cc)
 
 
 # ---------------------------------------------------------------------------
@@ -196,12 +221,18 @@ class Firmware(object):
         self.sent.append((lsb, value))
 
     def midi_event(self, timbres, ccs):
-        """One midi event dispatched to the given timbres, as midiEventReceived() does."""
+        """Replay a list of control changes.
+
+        Every entry in ccs is its own midi message, so midiEventReceived() runs once per
+        entry: it recomputes the timbre list and clears the per-event command guard each
+        time, then dispatches to every addressed timbre. Resetting the guard once for the
+        whole list would wrongly suppress a second command sent back to back.
+        """
         if not timbres:
             return
-        self.currentEventTimbreCount = len(timbres)
-        self.editorCommandDoneThisEvent = False
         for cc, value in ccs:
+            self.currentEventTimbreCount = len(timbres)
+            self.editorCommandDoneThisEvent = False
             for t in timbres:
                 self.control_change(t, cc, value)
 
@@ -221,8 +252,27 @@ class Firmware(object):
         elif cc == 38:
             n["valueLSB"] = value
             ready = True
+        elif cc == 96:
+            if n["valueLSB"] == 127:
+                n["valueLSB"] = 0
+                n["valueMSB"] += 1
+            else:
+                n["valueLSB"] += 1
+            # No data entry byte: the lsb is derived from whatever was there before.
+            self.editorValueMsbSeen[timbre] = False
+            ready = True
+        elif cc == 97:
+            if n["valueLSB"] == 0:
+                n["valueLSB"] = 127
+                n["valueMSB"] -= 1
+            else:
+                n["valueLSB"] -= 1
+            self.editorValueMsbSeen[timbre] = False
+            ready = True
         if ready:
             self.decode_nrpn(timbre)
+            if n["paramMSB"] == PAGE:
+                self.editorValueMsbSeen[timbre] = False
 
     def decode_nrpn(self, timbre):
         n = self.nrpn[timbre]
@@ -441,6 +491,112 @@ def test_09_repeated_identical_store():
         check(len(responses(fw, C["EDITOR_RSP_STORE_STATUS"])) == 1,
               "a repeated store answered more than once")
     check(fw.banks[1].presets == {9: "timbre0-buffer"}, "a repeated store touched other slots")
+
+
+def test_09b_completed_store_value_is_consumed():
+    target = (1 << 7) | 9
+
+    # Once the complete command has been dispatched, a lone data-entry LSB must not reuse
+    # its page, request and value MSB to write a neighbouring slot.
+    fw = Firmware()
+    fw.midi_event([0], nrpn_sequence(C["EDITOR_REQ_STORE"], target))
+    fw.sent = []
+    fw.midi_event([0], [(38, 10)])
+    check(status_of(fw) == C["EDITOR_STATUS_PROTOCOL_ERROR"],
+          "a lone CC38 after store was accepted")
+    check(fw.banks[1].presets == {9: "timbre0-buffer"},
+          "a lone CC38 after store overwrote another slot")
+
+    # NRPN increment/decrement also set readyToSend without carrying a fresh CC6.
+    for cc in (96, 97):
+        fw = Firmware()
+        fw.midi_event([0], nrpn_sequence(C["EDITOR_REQ_STORE"], target))
+        fw.sent = []
+        fw.midi_event([0], [(cc, 0)])
+        check(status_of(fw) == C["EDITOR_STATUS_PROTOCOL_ERROR"],
+              "CC%d after store was accepted" % cc)
+        check(fw.banks[1].presets == {9: "timbre0-buffer"},
+              "CC%d after store overwrote another slot" % cc)
+
+    # A rejected global/ambiguous command must consume the value on every timbre, not only
+    # on the first one that emitted the error response.
+    fw = Firmware()
+    fw.midi_event([0, 1], nrpn_sequence(C["EDITOR_REQ_STORE"], target))
+    fw.sent = []
+    fw.midi_event([1], [(38, 10)])
+    check(status_of(fw) == C["EDITOR_STATUS_PROTOCOL_ERROR"],
+          "an ambiguous store left a reusable value on a secondary timbre")
+    check(all(not b.presets for b in fw.banks),
+          "a rejected ambiguous store was later reused to write a slot")
+
+
+def test_09c_increment_never_stores():
+    """CC96/CC97 derive the preset number from a stale value lsb, so they must never
+    reach editorStore(), not even directly after a fresh CC6."""
+    for cc in (96, 97):
+        # an unrelated earlier nrpn leaves a stale value lsb behind
+        fw = Firmware()
+        fw.midi_event([0], [(99, 0), (98, 44), (6, 0), (38, 42)])
+        fw.sent = []
+        # a page 4 store that never sends CC38 at all
+        fw.midi_event([0], [(99, PAGE), (98, C["EDITOR_REQ_STORE"]), (6, 1), (cc, 0)])
+        check(status_of(fw) == C["EDITOR_STATUS_PROTOCOL_ERROR"],
+              "CC%d after a fresh CC6 was accepted as a store" % cc)
+        check(all(not b.presets for b in fw.banks),
+              "CC%d after a fresh CC6 wrote a slot nobody addressed" % cc)
+
+        # and the same right after a completed store, where the value msb is still valid
+        fw = Firmware()
+        fw.midi_event([0], nrpn_sequence(C["EDITOR_REQ_STORE"], (1 << 7) | 9))
+        fw.sent = []
+        fw.midi_event([0], [(6, 1), (cc, 0)])
+        check(status_of(fw) == C["EDITOR_STATUS_PROTOCOL_ERROR"],
+              "CC%d after store plus CC6 was accepted" % cc)
+        check(fw.banks[1].presets == {9: "timbre0-buffer"},
+              "CC%d after store plus CC6 overwrote another slot" % cc)
+
+
+def test_09d_value_bytes_may_be_resent_alone():
+    """The regular nrpn idiom of keeping the selected parameter and sending only a new
+    CC6/CC38 pair must keep working, otherwise the guard is too strict."""
+    fw = Firmware()
+    fw.midi_event([0], nrpn_sequence(C["EDITOR_REQ_STORE"], (1 << 7) | 9))
+    fw.sent = []
+    fw.midi_event([0], [(6, 1), (38, 20)])
+    check(status_of(fw) == C["EDITOR_STATUS_OK"],
+          "a fresh CC6 + CC38 pair on the selected parameter was refused")
+    check(fw.banks[1].presets == {9: "timbre0-buffer", 20: "timbre0-buffer"},
+          "the CC6 + CC38 pair did not write the addressed slot")
+
+
+def test_09e_value_lsb_before_msb_is_refused():
+    """CC38 arriving before CC6 leaves the value msb stale, so it must not store."""
+    fw = Firmware()
+    fw.midi_event([0], [(99, 0), (98, 44), (6, 5), (38, 42)])
+    fw.sent = []
+    fw.midi_event([0], [(99, PAGE), (98, C["EDITOR_REQ_STORE"]), (38, 7), (6, 1)])
+    check(status_of(fw) == C["EDITOR_STATUS_PROTOCOL_ERROR"],
+          "a store with the value lsb before the value msb was accepted")
+    check(all(not b.presets for b in fw.banks),
+          "a store with the value bytes in the wrong order wrote a slot")
+
+
+def test_09f_two_commands_back_to_back():
+    """Each control change is its own midi event, so the per-event command guard must not
+    swallow a second complete command that follows immediately."""
+    fw = Firmware()
+    fw.midi_event([0], nrpn_sequence(C["EDITOR_REQ_CAPABILITY"], 0))
+    fw.midi_event([0], nrpn_sequence(C["EDITOR_REQ_CAPABILITY"], 0))
+    check(len(responses(fw, C["EDITOR_RSP_PROTOCOL_VERSION"])) == 2,
+          "the second of two consecutive queries was suppressed")
+
+    fw = Firmware()
+    fw.midi_event([0], nrpn_sequence(C["EDITOR_REQ_STORE"], (1 << 7) | 9))
+    fw.midi_event([0], nrpn_sequence(C["EDITOR_REQ_STORE"], (1 << 7) | 10))
+    check(len(responses(fw, C["EDITOR_RSP_STORE_STATUS"])) == 2,
+          "the second of two consecutive stores was suppressed")
+    check(fw.banks[1].presets == {9: "timbre0-buffer", 10: "timbre0-buffer"},
+          "two consecutive stores did not write both addressed slots")
 
 
 def test_10_other_timbres_untouched():
