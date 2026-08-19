@@ -16,7 +16,12 @@ Built on 2026-08-19, Windows 11 Pro 10.0.26200, Git Bash.
 | working commit | `f7cdfcf444f3442be3e0a823ef25d66b316f1dbf` |
 
 The remote `vosim` head was checked before any work started and matched the expected base
-commit `6ed604a…` exactly, so no deviation had to be investigated. The push URL of
+commit `6ed604a…` exactly, so no deviation had to be investigated.
+
+`6ed604a` is also the head of [`Ixox/preenfm2` PR #18](https://github.com/Ixox/preenfm2/pull/18),
+which publishes the VOSIM work and is still open against `master`. It is therefore the
+source of the `p2_2.21b_lfo_vosim.bin` community build, so this firmware is that build plus
+the editor protocol. The check is documented in `release/fw_2.21b_lfo_vosim/README.md`. The push URL of
 `upstream` was set to `DISABLED_NO_PUSH_TO_UPSTREAM` so nothing can be pushed to
 `pvig/preenfm2` by accident.
 

@@ -47,6 +47,16 @@ on `feature/editor-remote-store`.
 `master`, `dispatcher`, or the official Ixox repository. No changes from other development
 branches were merged in.
 
+The base commit `6ed604a` is also the head of
+[`Ixox/preenfm2` PR #18](https://github.com/Ixox/preenfm2/pull/18), the pull request that
+publishes the VOSIM work and is still open against `master`. That PR is the source behind
+the `p2_2.21b_lfo_vosim.bin` build circulated on the
+[ixox forum](https://ixox.fr/forum/index.php?topic=70017.15). In other words, the extended
+algorithms and LFO shapes are already in this firmware's base, and `3.00 alpha` is that
+build plus the editor protocol, not an alternative to it. The reference binary and the
+evidence are in
+[`release/fw_2.21b_lfo_vosim/`](release/fw_2.21b_lfo_vosim/README.md).
+
 ---
 
 ## What was added
