@@ -1,6 +1,10 @@
 # PreenFM2 editor remote protocol, version 1
 
-Firmware `2.22p1`, base `pvig/preenfm2` branch `vosim`, commit `6ed604a43636c00bfbac9613c8f5a79a7582dfa7`.
+Protocol version 1, introduced in firmware `3.00 alpha`.
+Base `pvig/preenfm2` branch `vosim`, commit `6ed604a43636c00bfbac9613c8f5a79a7582dfa7`.
+
+The protocol version is independent of the firmware version and stays at 1 until the wire
+format changes.
 
 This protocol lets an editor ask the firmware what it supports, ask where it currently is
 inside the patch banks, and write the current edit buffer straight into a bank slot. It is

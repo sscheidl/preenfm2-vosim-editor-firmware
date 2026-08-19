@@ -1,5 +1,5 @@
 # Release artifacts must stay byte identical to their SHA-256 checksums,
 # so they are exempt from any line ending conversion.
-release/editor-protocol-2.22p1/*.patch -text
-release/editor-protocol-2.22p1/SHA256SUMS -text
-release/editor-protocol-2.22p1/*_symbol.txt -text
+release/editor-protocol-3.00alpha/*.patch -text
+release/editor-protocol-3.00alpha/SHA256SUMS -text
+release/editor-protocol-3.00alpha/*_symbol.txt -text

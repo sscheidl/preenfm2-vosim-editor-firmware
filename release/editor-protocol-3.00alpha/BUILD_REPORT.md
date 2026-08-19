@@ -1,4 +1,4 @@
-# Build report, editor protocol pre-release 2.22p1
+# Build report, editor protocol pre-release 3.00 alpha
 
 Built on 2026-08-19, Windows 11 Pro 10.0.26200, Git Bash.
 
@@ -13,7 +13,7 @@ Built on 2026-08-19, Windows 11 Pro 10.0.26200, Git Bash.
 | origin | `https://github.com/sscheidl/preenfm2-vosim-editor-firmware.git` (private, not a fork) |
 | base commit | `6ed604a43636c00bfbac9613c8f5a79a7582dfa7` — "vosim sync, sigma fix" |
 | working branch | `feature/editor-remote-store` |
-| working commit | `7df765ec404601e82366d7d4f58450df0266ca49` |
+| working commit | `bbbe64156a0f81c251d2d619e0aafb4eab7388d6` |
 
 The remote `vosim` head was checked before any work started and matched the expected base
 commit `6ed604a…` exactly, so no deviation had to be investigated. The push URL of
@@ -92,20 +92,20 @@ Both targets built successfully, exit code 0.
 
 | artifact | size (bytes) |
 |---|---:|
-| `p2_2.22p1.bin` | 415 032 |
-| `p2_2.22p1o.bin` | 415 032 |
-| `p2_2.22p1.elf` | 2 384 364 |
-| `p2_2.22p1o.elf` | 2 384 364 |
+| `p2_3.00alpha.bin` | 415 056 |
+| `p2_3.00alphao.bin` | 415 056 |
+| `p2_3.00alpha.elf` | 2 384 364 |
+| `p2_3.00alphao.elf` | 2 384 364 |
 
 ### Comparison with the unmodified vosim base
 
 The base commit was built first with the identical toolchain and commands, for a like for
 like comparison.
 
-| | base 2.21b | new 2.22p1 | delta |
+| | base 2.21b | new 3.00 alpha | delta |
 |---|---:|---:|---:|
-| `.bin` size | 413 936 | 415 032 | **+1 096** |
-| `.text` | 359 168 | 360 240 | +1 072 |
+| `.bin` size | 413 936 | 415 056 | **+1 120** |
+| `.text` | 359 168 | 360 288 | +1 120 |
 | `.data` | 54 768 | 54 768 | 0 |
 | `.bss` | 100 208 | 100 216 | +8 |
 | `.ccm` (`0x6198`) | 24 984 | 24 984 | 0 |
@@ -126,7 +126,7 @@ FLASH  (rx)  : ORIGIN = 0x08040000, LENGTH = 768K   =  786 432
 
 | region | used | limit | headroom |
 |---|---:|---:|---:|
-| FLASH (`.bin`) | 415 032 | 786 432 | 52.8 % used, 371 400 free |
+| FLASH (`.bin`) | 415 056 | 786 432 | 52.8 % used, 371 376 free |
 | RAM (`.data` + `.jcr` + `.bss`) | 96 072 | 114 688 | 83.8 % used, 18 616 free |
 | CCMRAM (`.ccm` + `.ccmnoload`) | 58 916 | 65 536 | 89.9 % used, 6 620 free, unchanged |
 
@@ -170,11 +170,11 @@ changed. The complete build logs are the raw make output referenced in section 7
 See `SHA256SUMS` in this directory:
 
 ```
-b475b88522869dfc13609290542190cf6bd31466035f529468dae3134eedf0dc  p2_2.22p1.bin
-b475b88522869dfc13609290542190cf6bd31466035f529468dae3134eedf0dc  p2_2.22p1o.bin
-e72a4574f36452e3742f1f28d8dad23fe6499d8cdd0ae9de1d110643cb81b0b9  p2_2.22p1.elf
-e72a4574f36452e3742f1f28d8dad23fe6499d8cdd0ae9de1d110643cb81b0b9  p2_2.22p1o.elf
-69bf5f8c39d599d4fe29c963fa21ea7a14266b159d25fee975aee05310b40a41  editor-protocol-2.22p1.patch
+5fe73ed8b155da8f61eea8e91884ea3cb0e9fab064296b0f292ae144009b7737  p2_3.00alpha.bin
+5fe73ed8b155da8f61eea8e91884ea3cb0e9fab064296b0f292ae144009b7737  p2_3.00alphao.bin
+39ec93659445e228edf7eb92a14459eab48e4f8423436fbc4ebbf51a1708ae5d  p2_3.00alpha.elf
+39ec93659445e228edf7eb92a14459eab48e4f8423436fbc4ebbf51a1708ae5d  p2_3.00alphao.elf
+a7ecee9a98e8a5b2bfe2bc4a6132ffd40ca428a61f83d4cfa08257483e9bea6c  editor-protocol-3.00alpha.patch
 ```
 
 Base build, for reference:
@@ -188,18 +188,18 @@ p2_2.21bo.bin  md5 e71d0eb38e598e1f44ff26a9cd26ea35   413 936 bytes
 
 ## 7. Artifact paths
 
-All inside the repository, under `release/editor-protocol-2.22p1/`:
+All inside the repository, under `release/editor-protocol-3.00alpha/`:
 
 | file | content |
 |---|---|
-| `p2_2.22p1.bin` | regular firmware |
-| `p2_2.22p1o.bin` | overclock firmware, byte identical, see section 4 |
-| `p2_2.22p1.elf` | regular firmware with debug symbols |
-| `p2_2.22p1o.elf` | overclock firmware with debug symbols |
-| `p2_2.22p1_symbol.txt` | symbol map, regular |
-| `p2_2.22p1o_symbol.txt` | symbol map, overclock |
+| `p2_3.00alpha.bin` | regular firmware |
+| `p2_3.00alphao.bin` | overclock firmware, byte identical, see section 4 |
+| `p2_3.00alpha.elf` | regular firmware with debug symbols |
+| `p2_3.00alphao.elf` | overclock firmware with debug symbols |
+| `p2_3.00alpha_symbol.txt` | symbol map, regular |
+| `p2_3.00alphao_symbol.txt` | symbol map, overclock |
 | `SHA256SUMS` | checksums |
-| `editor-protocol-2.22p1.patch` | full git diff `6ed604a…7df765e` |
+| `editor-protocol-3.00alpha.patch` | full git diff `6ed604a…bbbe641` |
 | `EDITOR_PROTOCOL.md` | protocol specification |
 | `BUILD_REPORT.md` | this file |
 | `FIRMWARE_SAFETY_REVIEW.md` | independent review of the store data path |
@@ -209,27 +209,68 @@ The build directory `build/` is git ignored and holds the same binaries after a 
 
 ---
 
-## 8. Version number
+## 8. Version number and boot screen
 
-`Makefile` line 1 changed from `PFM2_VERSION_NUMBER=2.21b` to `PFM2_VERSION_NUMBER=2.22p1`.
+`Makefile` line 1 previously held one variable that served two incompatible purposes. The
+display string `3.00 alpha` contains a space, and the same variable is used as a build path
+component, where make would split `build/p2_3.00 alpha.elf` into two words. The two uses are
+now separate:
 
-The value is used in two ways, both verified:
+```makefile
+PFM2_VERSION_NUMBER=3.00alpha              # file names: build/p2_3.00alpha.bin
+PFM2_VERSION_DISPLAY=3.00 alpha            # what the firmware shows
+PFM2_VERSION:='"${PFM2_VERSION_DISPLAY}"'  # single quoted, see below
+```
 
-- as the C string `PFM2_VERSION`, shown at boot as `"preenfm2 v" PFM2_VERSION CVIN_STRING`
-  in `src/PreenFM_init.cpp:24`, and in the menu version item in `src/hardware/Menu.cpp:38`.
-  The boot line grows from `preenfm2 v2.21b` (15 characters) to `preenfm2 v2.22p1`
-  (16 characters). The display is 20 columns wide, so both fit. `MCP4922_screenBoot()`
-  draws the line character by character over 20 columns and stops at the terminating zero;
-  `CS4344_screenBoot()` right aligns it with `setCursor(20 - length, 0)`. Neither path
-  truncates or overflows at 16 characters. Verified against the built binary, whose
-  embedded string reads `preenfm2 v2.22p1`;
-- as a build path component, `build/p2_2.22p1.elf` and `build/p2_2.22p1o.bin`. `p1` needs
-  no escaping and the make and shell rules handle it unchanged.
+The single quotes matter. `-DPFM2_VERSION=\"3.00 alpha\"` would reach the shell as two
+arguments and break the compile. `-DPFM2_VERSION='"3.00 alpha"'` is passed to the compiler
+as one argument, space included. Verified by a real build, not by inspection.
 
-No format compromise was needed, the requested `2.22p1` is used verbatim. The firmware no
-longer reports itself as `2.21b`.
+`PFM2_BOOTLOADER_VERSION` is untouched and still uses the old escaping, since it has no
+space.
 
----
+### Boot screen
+
+`src/PreenFM_init.cpp` defines three lines, on a 20 column by 4 row display:
+
+```c
+const char* line1 = "preenfm2 v"PFM2_VERSION""CVIN_STRING;   // "preenfm2 v3.00 alpha", 20
+const char* line2 = "  By Hosxe & tAUREON";                  // 20
+const char* line3 = "          24bits DAC";                  // 20
+```
+
+`line1` is now exactly 20 characters, which both render paths handle:
+
+- `MCP4922_screenBoot()` walks columns 0..19 and stops early at the terminating zero. At 20
+  characters it simply never stops early;
+- `CS4344_screenBoot()` right aligns with `setCursor(20 - length, 0)`, which becomes
+  `setCursor(0, 0)`.
+
+`line2` changed from `"     By Xavier Hosxe"` to `"  By Hosxe & tAUREON"`. **The length of
+20 is load bearing:** `MCP4922_screenBoot()` prints `line2[r]` for `r` = 0..19 with **no
+terminator check**, so a shorter string would be read past its end. The replacement is
+exactly 20 characters, and the script that applied it asserts that length.
+
+Xavier Hosxe keeps his attribution as the original author: on the boot screen, in every GPL
+source header, in the USB manufacturer string `USBD_MANUFACTURER_STRING` in
+`src/usb/usbd_midi_desc.c`, and in the README. This build's author is credited alongside,
+not in place of him.
+
+### Verified against the binary
+
+The strings were read back out of the built `.bin`, not inferred from the source:
+
+```
+preenfm2 v3.00 alpha     20 characters
+  By Hosxe & tAUREON     20 characters
+          24bits DAC     20 characters
+Xavier Hosxe             USB manufacturer string, unchanged
+```
+
+The menu version item `V:` shows `3.00 alpha` (`src/hardware/Menu.cpp:38`, 13 characters
+including the label, well inside 20 columns).
+
+The firmware no longer reports itself as `2.21b`.
 
 ## 9. Tests that could not be run
 
@@ -254,7 +295,7 @@ What *was* verified, and how:
 | NRPN page 4 collides with nothing | mechanical range check in `test/host/protocol_sim_test.py` |
 | decode path, status codes, target encoding | simulation, `test/host/protocol_sim_test.py`, 23 cases, 89 checks |
 | store data flow | static review, `FIRMWARE_SAFETY_REVIEW.md` |
-| synthesis untouched | the diff touches no synth engine file, see `editor-protocol-2.22p1.patch` |
+| synthesis untouched | the diff touches no synth engine file, see `editor-protocol-3.00alpha.patch` |
 
 There is no host C++ toolchain on this machine, and adding one would have meant shipping a
 second build system beside the firmware `Makefile`. The protocol check is therefore a

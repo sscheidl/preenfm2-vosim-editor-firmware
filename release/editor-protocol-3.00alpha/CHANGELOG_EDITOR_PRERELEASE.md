@@ -1,9 +1,9 @@
 # Changelog, editor protocol pre-release
 
-## 2.22p1 — 2026-08-19 — experimental pre-release, not hardware tested
+## 3.00 alpha — 2026-08-19 — experimental pre-release, not hardware tested
 
 Base: `pvig/preenfm2` branch `vosim`, commit `6ed604a43636c00bfbac9613c8f5a79a7582dfa7`
-(firmware `2.21b`). Work commit `7df765ec404601e82366d7d4f58450df0266ca49`.
+(firmware `2.21b`). Work commit `bbbe64156a0f81c251d2d619e0aafb4eab7388d6`.
 
 ### Added
 
@@ -31,9 +31,17 @@ Base: `pvig/preenfm2` branch `vosim`, commit `6ed604a43636c00bfbac9613c8f5a79a75
   regular patch bank is loaded. It previously updated only `preenFMBankNumber` and
   `preenFMPresetNumber`, which left the remembered position incomplete after a program
   change. **This is a bug fix, independent of the new protocol.**
-- Version string `2.21b` -> `2.22p1`, in `Makefile` line 1. The boot screen shows
-  `preenfm2 v2.22p1`, 16 characters on the 20 column display, and the menu version item
-  shows `2.22p1`.
+- Version `2.21b` -> `3.00 alpha`. The boot screen shows `preenfm2 v3.00 alpha`, exactly
+  the 20 columns the display has, and the menu version item shows `3.00 alpha`.
+- `Makefile` now separates the display string from the file name component, because the
+  display string contains a space and the same value ends up in build paths:
+  `PFM2_VERSION_NUMBER=3.00alpha` for file names, `PFM2_VERSION_DISPLAY=3.00 alpha` for the
+  display, and `PFM2_VERSION` single quoted so the compiler receives one argument.
+- Boot author line `"     By Xavier Hosxe"` -> `"  By Hosxe & tAUREON"`. Xavier Hosxe keeps
+  his attribution as the original author, here and in every GPL header, in the USB
+  manufacturer string and in the README; this build's author is credited alongside him. The
+  line stays exactly 20 characters because `MCP4922_screenBoot()` prints it column by column
+  without a terminator check.
 
 ### Unchanged, verified
 

@@ -20,3 +20,5 @@ gcc-arm**/**
 
 # build helper written by the Makefile
 .binfirmware
+__pycache__/
+*.pyc

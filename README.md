@@ -2,7 +2,7 @@
 
 > ## ⚠ Experimental pre-release. Not hardware tested. Do not flash yet.
 >
-> The firmware in `release/editor-protocol-2.22p1/` compiles and links cleanly with the
+> The firmware in `release/editor-protocol-3.00alpha/` compiles and links cleanly with the
 > prescribed toolchain, and its new data path has been reviewed statically and checked by
 > simulation. **It has never run on a PreenFM2.** No successful hardware test is claimed.
 >
@@ -27,7 +27,7 @@ original commit history, and all GPL and copyright headers are preserved unchang
 | branch | `vosim` |
 | base commit | `6ed604a43636c00bfbac9613c8f5a79a7582dfa7` |
 | working branch | `feature/editor-remote-store` |
-| firmware version | `2.22p1` (pre-release; the base was `2.21b`) |
+| firmware version | `3.00 alpha` (pre-release; the base was `2.21b`) |
 
 Remotes are set up as:
 
@@ -62,7 +62,7 @@ Responses come back on page 4, LSB 64 and above, with explicit status codes for 
 bank absent or not writable, invalid slot, ambiguous midi channel, storage error, and
 protocol error.
 
-Full byte level specification: [`release/editor-protocol-2.22p1/EDITOR_PROTOCOL.md`](release/editor-protocol-2.22p1/EDITOR_PROTOCOL.md).
+Full byte level specification: [`release/editor-protocol-3.00alpha/EDITOR_PROTOCOL.md`](release/editor-protocol-3.00alpha/EDITOR_PROTOCOL.md).
 
 Loading over CC 0, CC 32 and program change is unchanged, as is the full parameter dump
 over NRPN 127/127. Synthesis, the VOSIM algorithms, the LFO shapes and the patch storage
@@ -81,16 +81,16 @@ It must not infer support from the firmware version string.
 
 ## Where the results are
 
-`release/editor-protocol-2.22p1/`
+`release/editor-protocol-3.00alpha/`
 
 | file | content |
 |---|---|
-| `p2_2.22p1.bin` | regular firmware |
-| `p2_2.22p1o.bin` | overclock firmware (byte identical, see the build report) |
-| `p2_2.22p1.elf`, `p2_2.22p1o.elf` | with debug symbols |
-| `p2_2.22p1_symbol.txt`, `p2_2.22p1o_symbol.txt` | symbol maps |
+| `p2_3.00alpha.bin` | regular firmware |
+| `p2_3.00alphao.bin` | overclock firmware (byte identical, see the build report) |
+| `p2_3.00alpha.elf`, `p2_3.00alphao.elf` | with debug symbols |
+| `p2_3.00alpha_symbol.txt`, `p2_3.00alphao_symbol.txt` | symbol maps |
 | `SHA256SUMS` | checksums |
-| `editor-protocol-2.22p1.patch` | full git diff against the base commit |
+| `editor-protocol-3.00alpha.patch` | full git diff against the base commit |
 | `EDITOR_PROTOCOL.md` | protocol specification |
 | `BUILD_REPORT.md` | toolchain, commands, sizes, warnings, what could not be tested |
 | `FIRMWARE_SAFETY_REVIEW.md` | independent review of the store data path |
@@ -127,11 +127,18 @@ python test/host/protocol_sim_test.py
 
 ---
 
-## License
+## Authors and license
+
+The PreenFM2 firmware is the work of **Xavier Hosxe**. The VOSIM branch this build starts
+from is maintained by **pvig**. The editor remote protocol in this repository was added by
+**tAUREON**.
+
+The boot screen credits both: `preenfm2 v3.00 alpha` / `By Hosxe & tAUREON`.
 
 GPL, as the upstream project. Every source file keeps its original license header and its
-original author attribution. See the headers in `src/` — most carry
-`Copyright 2013 Xavier Hosxe` and the GNU General Public License, version 3 or later.
+original author attribution unchanged. See the headers in `src/` — most carry
+`Copyright 2013 Xavier Hosxe` and the GNU General Public License, version 3 or later. The
+USB manufacturer string still identifies the device as Xavier Hosxe's design.
 
 ---
 

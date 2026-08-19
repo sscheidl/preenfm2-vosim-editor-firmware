@@ -1,7 +1,7 @@
-# Firmware safety review, editor remote store, 2.22p1
+# Firmware safety review, editor remote store, 3.00 alpha
 
 Independent second pass over the new store data path, done after the implementation, on
-the working commit `7df765ec404601e82366d7d4f58450df0266ca49`.
+the working commit `bbbe64156a0f81c251d2d619e0aafb4eab7388d6`.
 
 **Every check below is static or simulated. No hardware test was performed, and none is
 claimed.**
@@ -254,16 +254,20 @@ A store does not trigger a dump, and a program change still does not trigger a d
 
 **Risk:** the VOSIM algorithms 29-32 or the LFO shapes 6-8 are affected.
 
-The complete diff `6ed604a…7df765e` touches six files:
+The complete diff `6ed604a…bbbe641` touches seven files:
 
 ```
-Makefile                        version string only
+Makefile                        version strings only
+src/PreenFM_init.cpp            boot screen author line only
 src/filesystem/PatchBank.cpp    savePreenFMPatch return value
 src/filesystem/PatchBank.h      savePreenFMPatch signature
 src/midi/MidiDecoder.cpp        editor protocol
 src/midi/MidiDecoder.h          editor protocol
 src/synth/SynthState.cpp        3 lines, preenFMBank pointer after program change
 ```
+
+`src/PreenFM_init.cpp` changes one string constant on the boot screen and nothing else. It
+has no reachable path into the synthesis, storage or midi code.
 
 Not touched: `Osc.cpp`, `Osc.h`, `Timbre.cpp`, `Voice.cpp`, `Lfo*.cpp`, `Lfo*.h`,
 `Synth.cpp`, `Env.cpp`, `Matrix.cpp`, `Common.h`, or any other synthesis file. No
