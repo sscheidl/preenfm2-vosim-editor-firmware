@@ -31,8 +31,9 @@ Base: `pvig/preenfm2` branch `vosim`, commit `6ed604a43636c00bfbac9613c8f5a79a75
   regular patch bank is loaded. It previously updated only `preenFMBankNumber` and
   `preenFMPresetNumber`, which left the remembered position incomplete after a program
   change. **This is a bug fix, independent of the new protocol.**
-- Version string `2.21b` -> `2.22p1`, in `Makefile` line 1. Shown at boot as
-  `preenfm2 v2.22p1`, exactly 16 characters.
+- Version string `2.21b` -> `2.22p1`, in `Makefile` line 1. The boot screen shows
+  `preenfm2 v2.22p1`, 16 characters on the 20 column display, and the menu version item
+  shows `2.22p1`.
 
 ### Unchanged, verified
 

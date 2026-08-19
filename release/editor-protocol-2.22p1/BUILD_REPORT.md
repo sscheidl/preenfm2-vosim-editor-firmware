@@ -217,8 +217,12 @@ The value is used in two ways, both verified:
 
 - as the C string `PFM2_VERSION`, shown at boot as `"preenfm2 v" PFM2_VERSION CVIN_STRING`
   in `src/PreenFM_init.cpp:24`, and in the menu version item in `src/hardware/Menu.cpp:38`.
-  `"preenfm2 v2.22p1"` is exactly 16 characters, which fits the 16 column display
-  precisely. The previous string was 15 characters;
+  The boot line grows from `preenfm2 v2.21b` (15 characters) to `preenfm2 v2.22p1`
+  (16 characters). The display is 20 columns wide, so both fit. `MCP4922_screenBoot()`
+  draws the line character by character over 20 columns and stops at the terminating zero;
+  `CS4344_screenBoot()` right aligns it with `setCursor(20 - length, 0)`. Neither path
+  truncates or overflows at 16 characters. Verified against the built binary, whose
+  embedded string reads `preenfm2 v2.22p1`;
 - as a build path component, `build/p2_2.22p1.elf` and `build/p2_2.22p1o.bin`. `p1` needs
   no escaping and the make and shell rules handle it unchanged.
 
