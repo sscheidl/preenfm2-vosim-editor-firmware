@@ -13,6 +13,12 @@
 > back up the USB key, and test Store first on a throwaway bank. The Store command writes
 > immediately, by design, with no confirmation step.
 
+<p align="center">
+  <img src="docs/PreenFM2_2026.png" alt="PreenFM2 test hardware running the 3.00 alpha firmware" width="900" />
+</p>
+
+The physical PreenFM2 test unit running this 3.00-alpha developer firmware.
+
 ---
 
 ## What this repository is
