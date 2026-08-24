@@ -3,8 +3,12 @@
 Independent second pass over the new store data path, done after the implementation, on
 the working commit `f7cdfcf444f3442be3e0a823ef25d66b316f1dbf`.
 
-**Every check below is static or simulated. No hardware test was performed, and none is
-claimed.**
+**The review below was originally static or simulated; no hardware test had been
+performed when it was written.** Post-review status update, 2026-08-24: the
+regular binary has since passed its initial physical-hardware smoke test and
+has remained stable during continued use with PreenFM+, with no observed
+firmware anomalies. This does not turn the static review into exhaustive
+hardware coverage.
 
 ---
 
@@ -390,12 +394,14 @@ store status.
 | full dump regression | no regression |
 | VOSIM and LFO regression | no regression by construction, sound unverified |
 
-Open, hardware only: real write and read back comparison, audio behaviour during a store,
-usb key failure modes, display of the new version string, and the actual sound of the VOSIM
-algorithms and LFO shapes.
+These items were open when the static review was written: real write and read
+back comparison, audio behaviour during a Store, USB-key failure modes, display
+of the new version string, and the actual sound of the VOSIM algorithms and LFO
+shapes. Subsequent positive hardware use covers normal operation but does not
+fully close rare media-failure or exhaustive long-term cases.
 
-**Recommendation: do not flash until the owner explicitly releases it.** The store writes
-immediately and without confirmation, by design, so a first hardware test should target a
+**Current recommendation: treat the build as experimental alpha firmware.** The Store writes
+immediately and without confirmation, by design, so a first test on any device should target a
 throwaway bank on a usb key whose contents are backed up.
 
 ---

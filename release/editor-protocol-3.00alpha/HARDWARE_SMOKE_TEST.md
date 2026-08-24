@@ -1,8 +1,13 @@
 # First hardware smoke test, 3.00 alpha
 
-Nothing in this release has ever run on a PreenFM2. This is the procedure for finding that
-out safely, in an order where the destructive step comes last and only after the
-non-destructive ones have behaved.
+> **Status update, 2026-08-24:** the regular build has now been installed on a
+> physical PreenFM2. The initial smoke test was positive, and subsequent use
+> with PreenFM+ has remained stable without observed firmware anomalies. This
+> procedure remains useful for every new device, USB key or rebuilt binary.
+
+This procedure was written before the first hardware run and is retained as the
+safe validation sequence for a new device or rebuilt binary. It keeps the
+destructive step last, after the non-destructive checks have behaved.
 
 **The store command writes immediately. There is no confirmation step, by design.**
 

@@ -1,6 +1,15 @@
 # Changelog, editor protocol pre-release
 
-## 3.00 alpha — 2026-08-19 — experimental pre-release, not hardware tested
+## 3.00 alpha — 2026-08-19 — experimental pre-release
+
+### Hardware status update — 2026-08-24
+
+- The regular build has been installed on a physical PreenFM2.
+- The initial hardware smoke test was positive.
+- Continued use with PreenFM+ has remained stable, with no observed firmware
+  anomalies to date.
+- The build remains an alpha: broader long-term testing and rare failure-path
+  coverage are still incomplete.
 
 Base: `pvig/preenfm2` branch `vosim`, commit `6ed604a43636c00bfbac9613c8f5a79a7582dfa7`
 (firmware `2.21b`). Work commit `f7cdfcf444f3442be3e0a823ef25d66b316f1dbf`.
@@ -106,5 +115,5 @@ Writing to a real usb key and reading the slot back, audio behaviour during a st
 key failure modes, the boot and menu rendering of the new version string, and confirming
 the VOSIM algorithms and LFO shapes still sound correct.
 
-**Do not flash until explicitly released.** Back up the usb key first, and aim the first
-store at a throwaway bank.
+**Treat this as experimental alpha firmware.** Back up the USB key first, and aim the
+first Store operation at a throwaway bank.

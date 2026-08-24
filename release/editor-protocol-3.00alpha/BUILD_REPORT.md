@@ -291,9 +291,18 @@ The firmware no longer reports itself as `2.21b`.
 
 ## 9. Tests that could not be run
 
-**No hardware test was performed. No successful hardware test is claimed.**
+**At the time of this build report, no hardware test had been performed.**
 
-The following are open and can only be closed on a real PreenFM2 with a usb key:
+Post-build status update, 2026-08-24: the regular binary was subsequently
+installed on a physical PreenFM2. The initial smoke test was positive, and
+continued use with PreenFM+ has remained stable without observed firmware
+anomalies. This later result does not change the build-time evidence recorded
+above or constitute exhaustive long-term validation.
+
+At the time of the report, the following items were open and could only be
+checked on a real PreenFM2 with a USB key. The later positive smoke test and
+continued editor use provide practical coverage of the normal operating paths;
+rare media-failure cases and exhaustive long-term testing remain open:
 
 - writing to a real `.bnk` file on a real usb key, and reading the slot back,
 - store while notes are sounding, including the audible gap the blocking usb write causes,

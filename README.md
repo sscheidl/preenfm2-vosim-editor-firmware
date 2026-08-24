@@ -1,15 +1,17 @@
 # preenfm2 firmware, VOSIM base, with editor remote protocol
 
-> ## ⚠ Experimental pre-release. Not hardware tested. Do not flash yet.
+> ## ⚠ Experimental pre-release, now running on physical hardware
 >
 > The firmware in `release/editor-protocol-3.00alpha/` compiles and links cleanly with the
 > prescribed toolchain, and its new data path has been reviewed statically and checked by
-> simulation. **It has never run on a PreenFM2.** No successful hardware test is claimed.
+> simulation. The regular 3.00-alpha build has since been installed on a physical PreenFM2:
+> the initial smoke test was positive, continued operation with PreenFM+ has remained
+> stable, and no firmware anomaly has been observed so far.
 >
-> Do not flash it until the repository owner explicitly releases it. When that happens,
-> follow [`HARDWARE_SMOKE_TEST.md`](release/editor-protocol-3.00alpha/HARDWARE_SMOKE_TEST.md):
-> back up the usb key first, and keep the first store on a throwaway bank. The store command
-> writes immediately, by design, with no confirmation step.
+> This remains alpha firmware rather than a general production release. Before flashing,
+> follow [`HARDWARE_SMOKE_TEST.md`](release/editor-protocol-3.00alpha/HARDWARE_SMOKE_TEST.md),
+> back up the USB key, and test Store first on a throwaway bank. The Store command writes
+> immediately, by design, with no confirmation step.
 
 ---
 
@@ -131,7 +133,8 @@ $MK clean && $MK pfmo
 
 Always run a full `clean` between targets, as the project warns.
 
-Protocol check, a simulation of the decode path, not a hardware test:
+Automated protocol check, which complements but does not replace the subsequent
+physical-hardware testing:
 
 ```bash
 python test/host/protocol_sim_test.py
