@@ -1,6 +1,6 @@
-# preenfm2 firmware, VOSIM base, with editor remote protocol
+# PreenFM2 3.00 alpha firmware — VOSIM base with editor remote protocol
 
-> ## ⚠ Experimental pre-release, now running on physical hardware
+> ## ⚠ Hardware-tested developer pre-release — not a final firmware release
 >
 > The firmware in `release/editor-protocol-3.00alpha/` compiles and links cleanly with the
 > prescribed toolchain, and its new data path has been reviewed statically and checked by
@@ -8,7 +8,7 @@
 > the initial smoke test was positive, continued operation with PreenFM+ has remained
 > stable, and no firmware anomaly has been observed so far.
 >
-> This remains alpha firmware rather than a general production release. Before flashing,
+> This is a developer version, not a final or general production release. Before flashing,
 > follow [`HARDWARE_SMOKE_TEST.md`](release/editor-protocol-3.00alpha/HARDWARE_SMOKE_TEST.md),
 > back up the USB key, and test Store first on a throwaway bank. The Store command writes
 > immediately, by design, with no confirmation step.
@@ -20,6 +20,13 @@
 A standalone repository for one piece of work: adding a MIDI protocol that lets a PreenFM
 editor **store** the current edit buffer into a bank slot, ask the firmware **where** it
 currently is, and ask **whether** the protocol is available at all.
+
+> [!IMPORTANT]
+> **Experimental AI-assisted development.** This tAUREON project explores the practical
+> benefits and limits of AI-assisted work on audio and synthesizer software. The editor
+> protocol and its documentation were developed through human-directed collaboration with
+> OpenAI Codex and Anthropic Claude Code. Treat this firmware as experimental developer
+> software and retain a known-good firmware image before flashing.
 
 It is not a GitHub fork and not a submodule of any editor project. It carries the full
 original commit history, and all GPL and copyright headers are preserved unchanged.
@@ -81,11 +88,13 @@ Loading over CC 0, CC 32 and program change is unchanged, as is the full paramet
 over NRPN 127/127. Synthesis, the VOSIM algorithms, the LFO shapes and the patch storage
 format are untouched — patches stay compatible with 2.21 in both directions.
 
-### Editor requirements
+### Compatible editor and device settings
 
-An editor needs a build that speaks this protocol; no released PreenFM+ / PreenFM2 editor
-does yet. On the device, `Receives:` must be set to `NRPN` or `CC & NRPN`, otherwise the
-requests are ignored and nothing is answered.
+[PreenFM+ 4.0.4](https://github.com/sscheidl/preenfm2-Editor) implements this protocol,
+including capability detection, position query, guarded Store and status reporting. Other
+editors must implement the protocol before they can use these functions. On the device,
+`Receives:` must be set to `NRPN` or `CC & NRPN`, otherwise the requests are ignored and
+nothing is answered.
 
 An editor should detect support by sending the capability query and waiting for an answer.
 It must not infer support from the firmware version string.
@@ -146,7 +155,7 @@ python test/host/protocol_sim_test.py
 
 The PreenFM2 firmware is the work of **Xavier Hosxe**. The VOSIM branch this build starts
 from is maintained by **pvig**. The editor remote protocol in this repository was added by
-**tAUREON**.
+**tAUREON**, with human-directed assistance from OpenAI Codex and Anthropic Claude Code.
 
 The boot screen credits both: `preenfm2 v3.00 alpha` / `By Hosxe & tAUREON`.
 
