@@ -140,6 +140,16 @@ def test_mpe_pieces_present():
 
     # the association is dropped everywhere a voice changes hands
     upd = body(timbre, "void Timbre::preenNoteOnUpdateMatrix")
+    check("setSource(MATRIX_SOURCE_MPESLIDE, this->lastSlide_)" in upd,
+          "a recycled voice keeps the previous member channel slide; CC74 needs the "
+          "same baseline restore as the pressure")
+    check("float lastSlide_;" in timbre_h, "Timbre has no CC74 baseline")
+    slide_setter = body(timbre, "void Timbre::setMatrixSlide")
+    check("lastSlide_ = newValue" in slide_setter
+          and "setMatrixSource(MATRIX_SOURCE_MPESLIDE, newValue)" in slide_setter,
+          "setMatrixSlide does not both store and broadcast")
+    check("setMatrixSlide(INV127 * midiEvent.value[1])" in decoder,
+          "the ordinary CC74 path does not go through setMatrixSlide")
     check("setMpeFreqOffset(0.0f)" in upd,
           "a recycled voice keeps the previous member channel bend")
     check("mpeVoiceOfChannel_[c] = -1" in upd,
@@ -212,6 +222,92 @@ def test_mpe_pieces_present():
           "the MPE settings were not appended at the end of the enum")
 
 
+def test_review_findings_r1_to_r4():
+    """Structural assertions for the four independent review findings."""
+    voice_h = read(VOICE_H)
+    decoder_h = read(DECODER_H)
+    decoder = read(DECODER_CPP)
+
+    # --- R1: the manager channel must reach the configured MPE timbre ---
+    check("bool isMpeManagerChannel(uint8_t channel);" in decoder_h,
+          "R1: no isMpeManagerChannel()")
+    received = decoder.split("void MidiDecoder::midiEventReceived")[1].split(
+        "if (timbreIndex == 0)")[0]
+    check("isMpeManagerChannel(midiEvent.channel)" in received,
+          "R1: the manager channel is still not recognised in the routing")
+    manager_branch = received.split("isMpeManagerChannel(midiEvent.channel)")[1][:200]
+    check("timbres[timbreIndex++] = mpeTimbre" in manager_branch,
+          "R1: the manager channel does not address the MPE timbre explicitly")
+    check("timbreIndex > 0" in received,
+          "R1: the ordinary channel match can still run for the manager channel")
+    mgr = body(decoder, "bool MidiDecoder::isMpeManagerChannel")
+    check("MIDICONFIG_MPE_MASTER" in mgr,
+          "R1: the manager channel is not taken from the configuration")
+
+    # --- R2: RPN must not reach the arp / parameter / nrpn paths ---
+    check("bool mpeConsumeRpn(MidiEvent& midiEvent);" in decoder_h,
+          "R2: no RPN state machine")
+    check("uint8_t mpeRpnMsb[16];" in decoder_h and "uint8_t mpeRpnLsb[16];" in decoder_h,
+          "R2: no per channel RPN selection state")
+    check("mpeConsumeRpn(midiEvent)" in received and "return;" in received,
+          "R2: RPN is not consumed in the routing")
+    order = received.find("mpeConsumeRpn")
+    member = received.find("isMpeMemberChannel(midiEvent.channel)")
+    check(0 < order < member,
+          "R2: RPN must be consumed before the member channel branch")
+    rpn = body(decoder, "bool MidiDecoder::mpeConsumeRpn")
+    for cc in ("101", "100"):
+        check("case %s:" % cc in rpn, "R2: CC%s is not handled" % cc)
+    check("case 6:" in rpn and "case 38:" in rpn, "R2: data entry is not handled")
+    check("0x7F" in rpn,
+          "R2: RPN Null is not handled, so CC6/CC38 would always be swallowed and the "
+          "editor nrpn protocol would break")
+    check("MIDICONFIG_MPE_BEND" in rpn, "R2: RPN 0 does not set the bend range")
+    check("MIDICONFIG_MPE_MEMBERS" in rpn, "R2: RPN 6 does not set the member count")
+    check("isMpeManagerChannel(channel)" in rpn,
+          "R2: an RPN on any channel could change a setting")
+
+    # --- R3: unseen member expression must not overwrite the manager baseline ---
+    check("bool mpePressureSeen[16];" in decoder_h and "bool mpeSlideSeen[16];" in decoder_h,
+          "R3: no validity state for member pressure and slide")
+    mpe_evt = decoder.split("void MidiDecoder::mpeEventReceived")[1].split("\nvoid ")[0]
+    check("if (mpePressureSeen[channel])" in mpe_evt,
+          "R3: an unseen member pressure is still applied on note on")
+    check("if (mpeSlideSeen[channel])" in mpe_evt,
+          "R3: an unseen member slide is still applied on note on")
+    check("mpePressureSeen[channel] = true" in mpe_evt,
+          "R3: receiving member pressure does not mark it seen")
+    check("mpeSlideSeen[channel] = true" in mpe_evt,
+          "R3: receiving member slide does not mark it seen")
+
+    # --- R4: every reset path clears decoder AND voice MPE state ---
+    forget = body(decoder, "void MidiDecoder::mpeForgetChannelState")
+    for field in ("mpePressureSeen", "mpeSlideSeen", "mpeRpnMsb", "mpeRpnLsb"):
+        check(field in forget, "R4: mpeForgetChannelState does not clear %s" % field)
+    forget_all = body(decoder, "void MidiDecoder::mpeForgetAllChannelState")
+    for field in ("mpePressureSeen", "mpeSlideSeen", "mpeRpnMsb", "mpeRpnLsb"):
+        check(field in forget_all, "R4: mpeForgetAllChannelState does not clear %s" % field)
+    check("void afterNewParamsLoad(int timbre) { mpeForgetAllChannelState(); }" in decoder_h,
+          "R4: a parameter load does not clear the decoder MPE state")
+    check("void afterNewComboLoad() { mpeForgetAllChannelState(); }" in decoder_h,
+          "R4: a combo load does not clear the decoder MPE state")
+    cc = decoder.split("void MidiDecoder::controlChange")[1]
+    for case in ("CC_ALL_NOTES_OFF", "CC_ALL_SOUND_OFF", "CC_RESET"):
+        section = cc.split("case %s:" % case)[1].split("break;")[0]
+        check("mpeForgetAllChannelState()" in section,
+              "R4: %s does not clear the decoder MPE state" % case)
+    check("mpeLastTimbre" in decoder_h and "mpeLastManager" in decoder_h,
+          "R4: an MPE configuration change is not detected")
+    gmt = body(decoder, "int MidiDecoder::getMpeTimbre")
+    check("mpeForgetAllChannelState()" in gmt,
+          "R4: switching MPE off or moving the zone leaves stale expression behind")
+    # the real Voice, not the simulation
+    vload = voice_h.split("void afterNewParamsLoad()")[1].split("for (int j")[0]
+    check("mpeFreqOffset = 0.0f" in vload,
+          "R4: Voice::afterNewParamsLoad does not clear mpeFreqOffset; a preset load "
+          "would leave a member bend on the voice")
+
+
 def test_no_editor_or_preset_change():
     decoder_h = read(DECODER_H)
     check("#define EDITOR_PROTOCOL_VERSION 1" in decoder_h,
@@ -259,6 +355,7 @@ class Timbre(object):
         self.voiceIndex = 1
         self.holdPedal = False
         self.lastChannelAfterTouch_ = 0.0
+        self.lastSlide_ = 0.0
         self.mpeVoiceOfChannel_ = [-1] * 16
 
     # -- Timbre::mpeForgetAllChannels --------------------------------------
@@ -270,6 +367,12 @@ class Timbre(object):
         self.lastChannelAfterTouch_ = value
         for k in range(self.numberOfVoice):
             self.voices[self.voiceNumber[k]].aftertouch = value
+
+    # -- Timbre::setMatrixSource(MATRIX_SOURCE_MPESLIDE, ...) --------------
+    def setMatrixSourceSlide(self, value):
+        self.lastSlide_ = value
+        for k in range(self.numberOfVoice):
+            self.voices[self.voiceNumber[k]].slide = value
 
     # -- Timbre::setMatrixPolyAfterTouch -----------------------------------
     def setMatrixPolyAfterTouch(self, note, value):
@@ -283,6 +386,7 @@ class Timbre(object):
     # -- Timbre::preenNoteOnUpdateMatrix -----------------------------------
     def preenNoteOnUpdateMatrix(self, n):
         self.voices[n].aftertouch = self.lastChannelAfterTouch_
+        self.voices[n].slide = self.lastSlide_
         self.voices[n].mpeFreqOffset = 0.0
         for c in range(16):
             if self.mpeVoiceOfChannel_[c] == n:
@@ -394,6 +498,7 @@ class Timbre(object):
     # -- Timbre::afterNewParamsLoad ----------------------------------------
     def afterNewParamsLoad(self):
         self.lastChannelAfterTouch_ = 0.0
+        self.lastSlide_ = 0.0
         self.mpeForgetAllChannels()
         for k in range(self.numberOfVoice):
             v = self.voices[self.voiceNumber[k]]
@@ -406,21 +511,45 @@ class Timbre(object):
 
 
 class Decoder(object):
-    """Transcription of the MidiDecoder MPE routing for one MPE timbre."""
+    """Transcription of the MidiDecoder routing, MPE and the ordinary path it feeds."""
 
-    def __init__(self, timbres, mpeInst=1, master=0, members=15, bendRange=48):
+    def __init__(self, timbres, mpeInst=1, master=0, members=15, bendRange=48,
+                 timbreChannel=None, globalChannel=0, currentChannel=0):
         self.timbres = timbres
         self.mpeInst = mpeInst          # 0 = off, else timbre number 1..4
         self.master = master            # 0 based midi channel
         self.members = members
         self.bendRange = bendRange
+        # MIDICONFIG_CHANNELn, 1 based, 0 == "All"
+        self.timbreChannel = timbreChannel or [1, 2, 3, 4]
+        self.globalChannel = globalChannel          # MIDICONFIG_GLOBAL, 0 == none
+        self.currentChannel = currentChannel        # MIDICONFIG_CURRENT_INSTRUMENT
+        self.currentTimbre = 0
         self.mpePressure = [0.0] * 16
         self.mpeSlide = [0.0] * 16
         self.mpeBend = [0.0] * 16
-        self.routedToOrdinary = []      # what fell through to the normal routing
+        self.mpePressureSeen = [False] * 16
+        self.mpeSlideSeen = [False] * 16
+        self.mpeRpnMsb = [0x7F] * 16
+        self.mpeRpnLsb = [0x7F] * 16
+        self.mpeLastTimbre = -1
+        self.mpeLastManager = -1
+        # observation only, so the tests can see where an ordinary message landed
+        self.ordinaryTimbres = []
+        self.nrpnDataEntry = []         # CC6/CC38 that reached the nrpn path
+        self.arpTouched = []            # CC100/CC101 that reached the arp mapping
 
+    # -- MidiDecoder::getMpeTimbre, including the R4 configuration change check --
     def getMpeTimbre(self):
-        return -1 if self.mpeInst == 0 else self.mpeInst - 1
+        timbre = -1 if self.mpeInst == 0 else self.mpeInst - 1
+        if timbre != self.mpeLastTimbre or self.master != self.mpeLastManager:
+            self.mpeLastTimbre = timbre
+            self.mpeLastManager = self.master
+            self.mpeForgetAllChannelState()
+        return timbre
+
+    def isMpeManagerChannel(self, channel):
+        return channel == self.master
 
     def isMpeMemberChannel(self, channel):
         members = max(1, min(15, self.members))
@@ -430,14 +559,89 @@ class Decoder(object):
         self.mpePressure[channel] = 0.0
         self.mpeSlide[channel] = 0.0
         self.mpeBend[channel] = 0.0
+        self.mpePressureSeen[channel] = False
+        self.mpeSlideSeen[channel] = False
+        self.mpeRpnMsb[channel] = 0x7F
+        self.mpeRpnLsb[channel] = 0x7F
 
+    def mpeForgetAllChannelState(self):
+        for c in range(16):
+            self.mpeForgetChannelState(c)
+
+    # -- MidiDecoder::mpeConsumeRpn ----------------------------------------
+    def mpeConsumeRpn(self, channel, cc, value):
+        if cc == 101:
+            self.mpeRpnMsb[channel] = value
+            return True
+        if cc == 100:
+            self.mpeRpnLsb[channel] = value
+            return True
+        if cc not in (6, 38):
+            return False
+        if self.mpeRpnMsb[channel] == 0x7F and self.mpeRpnLsb[channel] == 0x7F:
+            return False                       # RPN Null: ordinary data entry
+        if cc == 38:
+            return True
+        if self.isMpeManagerChannel(channel) and self.mpeRpnMsb[channel] == 0:
+            if self.mpeRpnLsb[channel] == 0:
+                self.bendRange = min(48, value)
+            elif self.mpeRpnLsb[channel] == 6:
+                if value >= 1:
+                    self.members = min(15, value)
+        return True
+
+    # -- MidiDecoder::midiEventReceived ------------------------------------
     def midiEventReceived(self, kind, channel, d1, d2=0):
+        timbres = []
         mpe = self.getMpeTimbre()
-        if mpe >= 0 and self.isMpeMemberChannel(channel):
-            self.mpeEventReceived(mpe, kind, channel, d1, d2)
+        if mpe >= 0:
+            if kind == "control_change" and self.mpeConsumeRpn(channel, d1, d2):
+                return
+            if self.isMpeMemberChannel(channel):
+                self.mpeEventReceived(mpe, kind, channel, d1, d2)
+                return
+            if self.isMpeManagerChannel(channel):
+                timbres.append(mpe)
+        if not timbres:
+            if self.globalChannel and channel == self.globalChannel - 1:
+                timbres = [0, 1, 2, 3]
+            elif self.currentChannel and channel == self.currentChannel - 1:
+                timbres = [self.currentTimbre]
+            else:
+                for t in range(len(self.timbres)):
+                    ch = self.timbreChannel[t]
+                    if ch == 0 or ch - 1 == channel:
+                        timbres.append(t)
+        if not timbres:
             return
-        self.routedToOrdinary.append((kind, channel, d1, d2))
+        self.ordinaryTimbres.append((kind, channel, d1, d2, tuple(timbres)))
+        self.ordinaryHandle(timbres, kind, channel, d1, d2)
 
+    # -- the ordinary message switch, only what these tests observe ---------
+    def ordinaryHandle(self, timbres, kind, channel, d1, d2):
+        for t in timbres:
+            timbre = self.timbres[t]
+            if kind == "aftertouch":
+                timbre.setMatrixChannelAfterTouch(INV127 * d1)
+            elif kind == "note_on" and d2 > 0:
+                timbre.preenNoteOn(d1, d2)
+            elif kind == "note_off" or (kind == "note_on" and d2 == 0):
+                timbre.preenNoteOff(d1)
+            elif kind == "control_change":
+                if d1 == 74:
+                    timbre.setMatrixSourceSlide(INV127 * d2)
+                elif d1 == 64:
+                    timbre.holdPedal = d2 >= 64
+                elif d1 in (120, 123, 127):
+                    timbre.mpeForgetAllChannels()
+                    if self.getMpeTimbre() == t:
+                        self.mpeForgetAllChannelState()
+                elif d1 in (100, 101):
+                    self.arpTouched.append((d1, d2))
+                elif d1 in (6, 38):
+                    self.nrpnDataEntry.append((d1, d2))
+
+    # -- MidiDecoder::mpeEventReceived -------------------------------------
     def mpeEventReceived(self, timbre, kind, channel, d1, d2):
         t = self.timbres[timbre]
         if kind == "note_off" or (kind == "note_on" and d2 == 0):
@@ -445,18 +649,27 @@ class Decoder(object):
             self.mpeForgetChannelState(channel)
         elif kind == "note_on":
             t.mpeNoteOn(channel, d1, d2)
-            t.mpeSetMatrixSource(channel, "aftertouch", self.mpePressure[channel])
-            t.mpeSetMatrixSource(channel, "slide", self.mpeSlide[channel])
+            if self.mpePressureSeen[channel]:
+                t.mpeSetMatrixSource(channel, "aftertouch", self.mpePressure[channel])
+            if self.mpeSlideSeen[channel]:
+                t.mpeSetMatrixSource(channel, "slide", self.mpeSlide[channel])
             t.mpeSetPitchBend(channel, self.mpeBend[channel], self.bendRange)
         elif kind == "aftertouch":
             self.mpePressure[channel] = INV127 * d1
+            self.mpePressureSeen[channel] = True
             t.mpeSetMatrixSource(channel, "aftertouch", self.mpePressure[channel])
         elif kind == "pitchwheel":
             self.mpeBend[channel] = d1
             t.mpeSetPitchBend(channel, d1, self.bendRange)
         elif kind == "control_change" and d1 == 74:
             self.mpeSlide[channel] = INV127 * d2
+            self.mpeSlideSeen[channel] = True
             t.mpeSetMatrixSource(channel, "slide", self.mpeSlide[channel])
+
+    # -- SynthParamListener hooks ------------------------------------------
+    def afterNewParamsLoad(self, timbre):
+        self.timbres[timbre].afterNewParamsLoad()
+        self.mpeForgetAllChannelState()
 
 
 def near(a, b):
@@ -610,35 +823,48 @@ def scenario_H():
 # --- I ---------------------------------------------------------------------
 def scenario_I():
     t, d = setup()
-    # master channel 1 (index 0) is NOT a member channel, it falls through to the
-    # ordinary routing, which is the zone wide behaviour
     check(not d.isMpeMemberChannel(0), "I: the master channel was treated as a member")
+    check(d.isMpeManagerChannel(0), "I: channel 1 is not recognised as the manager")
+    # the manager channel now addresses the MPE timbre explicitly and then runs the
+    # ordinary switch: broadcast plus baseline, i.e. the reviewed PolyAT behaviour
     d.midiEventReceived("aftertouch", 0, 70)
-    check(d.routedToOrdinary and d.routedToOrdinary[-1][0] == "aftertouch",
-          "I: master channel pressure did not reach the ordinary routing")
-    # the ordinary path is the reviewed PolyAT behaviour: broadcast plus baseline
-    d.midiEventReceived("note_on", 1, 60, 100)
-    t.setMatrixChannelAfterTouch(INV127 * 70)
     check(near(t.lastChannelAfterTouch_, INV127 * 70),
-          "I: master channel pressure did not set the timbre baseline")
+          "I: manager pressure did not set the timbre baseline")
     for k in range(t.numberOfVoice):
         check(near(t.voices[k].aftertouch, INV127 * 70),
-              "I: master channel pressure did not broadcast to voice %d" % k)
+              "I: manager pressure did not broadcast to voice %d" % k)
+    d.midiEventReceived("control_change", 0, 74, 100)
+    for k in range(t.numberOfVoice):
+        check(near(t.voices[k].slide, INV127 * 100),
+              "I: manager CC74 did not broadcast to voice %d" % k)
+    d.midiEventReceived("control_change", 0, 64, 127)
+    check(t.holdPedal, "I: manager CC64 did not reach the sustain pedal")
+    d.midiEventReceived("control_change", 0, 64, 0)
 
 
 # --- J ---------------------------------------------------------------------
 def scenario_J():
-    t, d = setup(mpeInst=0)          # MPE off
-    for ch in (0, 1, 5, 15):
+    # four timbres on channels 1..4, MPE off: the ordinary routing must be untouched
+    ts = [Timbre(3) for _ in range(4)]
+    d = Decoder(ts, mpeInst=0, timbreChannel=[1, 2, 3, 4])
+    for ch in (0, 1, 2, 3):
         d.midiEventReceived("note_on", ch, 60, 100)
         d.midiEventReceived("aftertouch", ch, 100)
-        d.midiEventReceived("pitchwheel", ch, 1.0)
         d.midiEventReceived("control_change", ch, 74, 100)
-    check(len(d.routedToOrdinary) == 16,
+    check(len(d.ordinaryTimbres) == 12,
           "J: with MPE off every message must reach the ordinary routing, got %d"
-          % len(d.routedToOrdinary))
-    check(all(v == -1 for v in t.mpeVoiceOfChannel_),
-          "J: MPE state was touched although MPE is off")
+          % len(d.ordinaryTimbres))
+    for index, (kind, ch, d1, d2, targets) in enumerate(d.ordinaryTimbres):
+        check(targets == (ch,),
+              "J: channel %d was routed to %s instead of timbre %d" % (ch, targets, ch))
+    for t in ts:
+        check(all(v == -1 for v in t.mpeVoiceOfChannel_),
+              "J: MPE state was touched although MPE is off")
+    # a channel nobody listens to is still dropped
+    before = len(d.ordinaryTimbres)
+    d.midiEventReceived("aftertouch", 9, 100)
+    check(len(d.ordinaryTimbres) == before,
+          "J: an unmatched channel was routed somewhere")
 
 
 # --- K ---------------------------------------------------------------------
@@ -677,7 +903,7 @@ def scenario_L():
           "L: member expression leaked into another timbre")
     # a channel inside the zone never reaches the ordinary routing, so a second timbre
     # configured on channel 2 is deliberately shadowed while MPE is on
-    check(not d.routedToOrdinary,
+    check(not d.ordinaryTimbres,
           "L: a member channel was also handed to the ordinary routing")
 
 
@@ -738,10 +964,215 @@ def scenario_N():
         check(0.0 <= t.voices[v].slide <= 1.0, "N: slide %d left the 0..1 range" % slide)
 
 
+# --- R1 --------------------------------------------------------------------
+def scenario_R1():
+    """Manager channel must reach the configured MPE timbre, not the one that happens
+    to be configured on that midi channel."""
+    t1 = Timbre(4)          # ordinary timbre, midi channel 1
+    t2 = Timbre(4)          # MPE timbre
+    d = Decoder([t1, t2], mpeInst=2, master=0, members=15,
+                timbreChannel=[1, 2, 3, 4])
+    d.midiEventReceived("aftertouch", 0, 70)
+    check(near(t2.lastChannelAfterTouch_, INV127 * 70),
+          "R1: manager pressure did not reach the MPE timbre")
+    check(near(t1.lastChannelAfterTouch_, 0.0),
+          "R1: manager pressure reached timbre 1, which is not the MPE timbre")
+    d.midiEventReceived("control_change", 0, 74, 100)
+    check(near(t2.lastSlide_, INV127 * 100), "R1: manager CC74 missed the MPE timbre")
+    check(near(t1.lastSlide_, 0.0), "R1: manager CC74 reached the wrong timbre")
+    d.midiEventReceived("control_change", 0, 64, 127)
+    check(t2.holdPedal, "R1: manager sustain missed the MPE timbre")
+    check(not t1.holdPedal, "R1: manager sustain reached the wrong timbre")
+    check(all(targets == (1,) for _, _, _, _, targets in d.ordinaryTimbres),
+          "R1: a manager message was routed to a timbre other than the MPE one")
+    # the global channel must not pull the manager channel back to everyone
+    t1b, t2b = Timbre(4), Timbre(4)
+    dg = Decoder([t1b, t2b], mpeInst=2, master=0, timbreChannel=[1, 2, 3, 4],
+                 globalChannel=1)
+    dg.midiEventReceived("aftertouch", 0, 90)
+    check(near(t1b.lastChannelAfterTouch_, 0.0),
+          "R1: the global channel dragged manager pressure into another timbre")
+    check(near(t2b.lastChannelAfterTouch_, INV127 * 90),
+          "R1: manager pressure did not reach the MPE timbre with a global channel set")
+
+
+# --- R2 --------------------------------------------------------------------
+def scenario_R2():
+    """An RPN sequence must not touch the arp CCs or the nrpn data entry."""
+    t, d = setup(members=15, bendRange=48)
+
+    # RPN 6, MPE configuration message: 5 member channels
+    d.midiEventReceived("control_change", 0, 101, 0)
+    d.midiEventReceived("control_change", 0, 100, 6)
+    d.midiEventReceived("control_change", 0, 6, 5)
+    d.midiEventReceived("control_change", 0, 38, 0)
+    check(d.members == 5, "R2: RPN 6 did not set the member count, got %r" % d.members)
+    check(not d.arpTouched,
+          "R2: CC100/CC101 reached the arpeggiator mapping: %r" % d.arpTouched)
+    check(not d.nrpnDataEntry,
+          "R2: CC6/CC38 reached the nrpn data entry: %r" % d.nrpnDataEntry)
+    check(not d.ordinaryTimbres,
+          "R2: an RPN byte reached the ordinary message switch")
+    check(d.isMpeMemberChannel(5) and not d.isMpeMemberChannel(6),
+          "R2: the zone did not shrink to the configured member count")
+
+    # RPN 0, pitch bend sensitivity
+    d.midiEventReceived("control_change", 0, 101, 0)
+    d.midiEventReceived("control_change", 0, 100, 0)
+    d.midiEventReceived("control_change", 0, 6, 24)
+    check(d.bendRange == 24, "R2: RPN 0 did not set the bend range, got %r" % d.bendRange)
+    d.midiEventReceived("note_on", 1, 60, 100)
+    d.midiEventReceived("pitchwheel", 1, 1.0)
+    v = voice_of(d, 1)
+    check(near(t.voices[v].mpeFreqOffset, 12.0),
+          "R2: the new bend range is not used, 24 semitones should give 12.0 units")
+
+    # RPN Null: data entry must go back to the nrpn path, or the editor breaks
+    d.midiEventReceived("control_change", 0, 101, 127)
+    d.midiEventReceived("control_change", 0, 100, 127)
+    d.midiEventReceived("control_change", 0, 6, 42)
+    d.midiEventReceived("control_change", 0, 38, 7)
+    check(d.nrpnDataEntry == [(6, 42), (38, 7)],
+          "R2: after RPN Null the data entry bytes must reach the nrpn path, got %r"
+          % d.nrpnDataEntry)
+    check(d.members == 5 and d.bendRange == 24,
+          "R2: data entry after RPN Null changed an MPE setting")
+
+    # an unsupported upper zone configuration on channel 16 is consumed, not applied
+    d2 = Decoder([Timbre(4)], mpeInst=1, master=0, members=15)
+    d2.midiEventReceived("control_change", 15, 101, 0)
+    d2.midiEventReceived("control_change", 15, 100, 6)
+    d2.midiEventReceived("control_change", 15, 6, 7)
+    check(d2.members == 15,
+          "R2: an upper zone configuration message changed the lower zone")
+    check(not d2.arpTouched and not d2.nrpnDataEntry,
+          "R2: an upper zone configuration message leaked into the patch")
+
+    # with MPE off nothing is consumed: ordinary routing is unchanged
+    t3 = Timbre(4)
+    d3 = Decoder([t3], mpeInst=0, timbreChannel=[1, 2, 3, 4])
+    for cc, value in ((101, 0), (100, 6), (6, 5), (38, 0)):
+        d3.midiEventReceived("control_change", 0, cc, value)
+    check(d3.arpTouched == [(101, 0), (100, 6)],
+          "R2: with MPE off CC100/101 must keep their ordinary arp meaning, got %r"
+          % d3.arpTouched)
+    check(d3.nrpnDataEntry == [(6, 5), (38, 0)],
+          "R2: with MPE off CC6/CC38 must keep reaching the nrpn path, got %r"
+          % d3.nrpnDataEntry)
+
+
+# --- R3 --------------------------------------------------------------------
+def scenario_R3():
+    """An unseen member value must not overwrite the manager baseline."""
+    t, d = setup()
+    d.midiEventReceived("aftertouch", 0, 70)           # manager pressure baseline
+    d.midiEventReceived("control_change", 0, 74, 90)   # manager slide baseline
+    d.midiEventReceived("note_on", 1, 60, 100)         # member note, no member value yet
+    v = voice_of(d, 1)
+    check(near(t.voices[v].aftertouch, INV127 * 70),
+          "R3: the new voice lost the manager pressure baseline, it is %r"
+          % t.voices[v].aftertouch)
+    check(near(t.voices[v].slide, INV127 * 90),
+          "R3: the new voice lost the manager slide baseline, it is %r"
+          % t.voices[v].slide)
+
+    # an explicit member 0 must override
+    d.midiEventReceived("aftertouch", 1, 0)
+    check(near(t.voices[v].aftertouch, 0.0),
+          "R3: an explicit member pressure of 0 did not override the baseline")
+    d.midiEventReceived("control_change", 1, 74, 0)
+    check(near(t.voices[v].slide, 0.0),
+          "R3: an explicit member slide of 0 did not override the baseline")
+
+    # and an explicit value above 0 still works
+    d.midiEventReceived("aftertouch", 1, 127)
+    check(near(t.voices[v].aftertouch, 1.0), "R3: explicit member pressure was lost")
+
+    # once seen, a later note on that channel does start from the member value
+    d.midiEventReceived("aftertouch", 2, 40)
+    d.midiEventReceived("note_on", 2, 64, 100)
+    v2 = voice_of(d, 2)
+    check(near(t.voices[v2].aftertouch, INV127 * 40),
+          "R3: expression sent before the note on was not applied")
+
+
+# --- R4 --------------------------------------------------------------------
+def scenario_R4():
+    """Every reset path must clear decoder state and voice bend, not just ownership."""
+
+    def loaded():
+        t, d = setup()
+        d.midiEventReceived("note_on", 1, 60, 100)
+        d.midiEventReceived("aftertouch", 1, 127)
+        d.midiEventReceived("control_change", 1, 74, 127)
+        d.midiEventReceived("pitchwheel", 1, 1.0)
+        return t, d
+
+    def assert_clean(t, d, what, voicesReset=False):
+        check(all(not f for f in d.mpePressureSeen), "%s: pressure validity survived" % what)
+        check(all(not f for f in d.mpeSlideSeen), "%s: slide validity survived" % what)
+        check(all(v == 0.0 for v in d.mpePressure), "%s: member pressure survived" % what)
+        check(all(v == 0.0 for v in d.mpeSlide), "%s: member slide survived" % what)
+        check(all(v == 0.0 for v in d.mpeBend), "%s: member bend survived" % what)
+        check(all(v == -1 for v in t.mpeVoiceOfChannel_), "%s: ownership survived" % what)
+        if voicesReset:
+            # Only a parameter/preset load re-initialises the voices themselves. After
+            # an all notes off the voices are releasing, and zeroing their bend there
+            # would make the release tail jump in pitch; the invariant that matters is
+            # enforced on the next note on, checked below.
+            check(all(near(v.mpeFreqOffset, 0.0) for v in t.voices),
+                  "%s: a voice kept its member bend" % what)
+        d.midiEventReceived("note_on", 1, 67, 100)
+        v = voice_of(d, 1)
+        check(near(t.voices[v].aftertouch, t.lastChannelAfterTouch_),
+              "%s: the next note inherited stale pressure" % what)
+        check(near(t.voices[v].slide, t.lastSlide_),
+              "%s: the next note inherited stale slide" % what)
+        check(near(t.voices[v].mpeFreqOffset, 0.0),
+              "%s: the next note inherited stale bend" % what)
+
+    # CC123 all notes off, on the manager channel so it reaches the MPE timbre
+    t, d = loaded()
+    d.midiEventReceived("control_change", 0, 123, 0)
+    assert_clean(t, d, "R4 all notes off")
+
+    # CC120 all sound off
+    t, d = loaded()
+    d.midiEventReceived("control_change", 0, 120, 0)
+    assert_clean(t, d, "R4 all sound off")
+
+    # CC127 reset
+    t, d = loaded()
+    d.midiEventReceived("control_change", 0, 127, 0)
+    assert_clean(t, d, "R4 reset")
+
+    # parameter / preset load
+    t, d = loaded()
+    d.afterNewParamsLoad(0)
+    assert_clean(t, d, "R4 parameter load", voicesReset=True)
+
+    # switching MPE off and on again must not resurrect the old expression
+    t, d = loaded()
+    d.mpeInst = 0
+    d.getMpeTimbre()
+    d.mpeInst = 1
+    d.getMpeTimbre()
+    check(all(not f for f in d.mpePressureSeen),
+          "R4: turning MPE off and on again kept the member expression")
+
+    # moving the zone has the same effect
+    t, d = loaded()
+    d.master = 4
+    d.getMpeTimbre()
+    check(all(v == 0.0 for v in d.mpePressure),
+          "R4: moving the manager channel kept the member expression")
+
+
 def main():
     test_no_new_matrix_source()
     test_polyat_contract_intact()
     test_mpe_pieces_present()
+    test_review_findings_r1_to_r4()
     test_no_editor_or_preset_change()
 
     for name, fn in (
@@ -758,7 +1189,11 @@ def main():
             ("K normal PolyAT regression", scenario_K),
             ("L timbre isolation", scenario_L),
             ("M all notes off / reset cleanup", scenario_M),
-            ("N boundary channels and values", scenario_N)):
+            ("N boundary channels and values", scenario_N),
+            ("R1 manager channel targets the MPE timbre", scenario_R1),
+            ("R2 RPN cannot reach arp / nrpn / patch", scenario_R2),
+            ("R3 unseen member value keeps the baseline", scenario_R3),
+            ("R4 every reset path clears MPE state", scenario_R4)):
         before = len(failures)
         fn()
         print("  scenario %-42s %s"
