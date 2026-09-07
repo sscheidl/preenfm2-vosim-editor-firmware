@@ -83,7 +83,10 @@ public:
     void noteOff(uint8_t note);
     void stopPlayingNow();
 
-    void preenNoteOn(uint8_t note, uint8_t velocity);
+    // Returns the voice number the note was given, or -1 when no voice was free.
+    // reuseSameNote is false for MPE: two member channels routinely play the same note
+    // number at the same time and each one must get its own voice.
+    int preenNoteOn(uint8_t note, uint8_t velocity, bool reuseSameNote = true);
     inline void preenNoteOnUpdateMatrix(int voiceToUse, int note, int velocity);
 #ifdef CVIN
     void propagateCvFreq(uint8_t note);
@@ -91,6 +94,8 @@ public:
     float getCvFrequency() { return this->cvFrequency; };
 #endif
     void preenNoteOff(uint8_t note);
+    // Voice currently owned by this MPE member channel, or -1.
+    int mpeVoiceOf(uint8_t channel);
     void numberOfVoicesChanged() {
         if (params.engine1.numberOfVoice > 0) {
             numberOfVoiceInverse = 1.0f / params.engine1.numberOfVoice;
@@ -109,6 +114,13 @@ public:
     void setMatrixSource(enum SourceEnum source, float newValue);
     void setMatrixChannelAfterTouch(float newValue);
     void setMatrixPolyAfterTouch(uint8_t note, float newValue);
+
+    // MPE : a member channel owns exactly one voice for the lifetime of its note.
+    void mpeNoteOn(uint8_t channel, uint8_t note, uint8_t velocity);
+    void mpeNoteOff(uint8_t channel, uint8_t note);
+    void mpeSetMatrixSource(uint8_t channel, enum SourceEnum source, float newValue);
+    void mpeSetPitchBend(uint8_t channel, float bend, int rangeInSemitones);
+    void mpeForgetAllChannels();
     void verifyLfoUsed(int encoder, float oldValue, float newValue);
 
     void midiClockStop() {
@@ -178,6 +190,10 @@ private:
     // note is given this baseline back so that it never inherits the polyphonic
     // pressure of the note that used the same voice before.
     float lastChannelAfterTouch_;
+    // MPE member channel -> voice number, indexed by midi channel 0..15, -1 when the
+    // channel currently owns no voice. This is the defining MPE identity : a note is
+    // addressed by its member channel, never by its note number.
+    int8_t mpeVoiceOfChannel_[16];
 #ifdef CVIN
     float cvFrequency;
 #endif

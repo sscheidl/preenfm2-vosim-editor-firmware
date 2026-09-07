@@ -97,6 +97,8 @@ void Synth::setHoldPedal(int timbre, int value) {
 }
 
 void Synth::allNoteOff(int timbre) {
+    // No MPE member channel owns any of these voices any more.
+    timbres[timbre].mpeForgetAllChannels();
     int numberOfVoices = timbres[timbre].params.engine1.numberOfVoice;
     for (int k = 0; k < numberOfVoices; k++) {
         // voice number k of timbre
@@ -108,6 +110,7 @@ void Synth::allNoteOff(int timbre) {
 }
 
 void Synth::allSoundOff(int timbre) {
+    timbres[timbre].mpeForgetAllChannels();
     int numberOfVoices = timbres[timbre].params.engine1.numberOfVoice;
     for (int k = 0; k < numberOfVoices; k++) {
         // voice number k of timbre
@@ -117,6 +120,9 @@ void Synth::allSoundOff(int timbre) {
 }
 
 void Synth::allSoundOff() {
+    for (int t = 0; t < NUMBER_OF_TIMBRES; t++) {
+        timbres[t].mpeForgetAllChannels();
+    }
     for (int k = 0; k < MAX_NUMBER_OF_VOICES; k++) {
         voices[k].killNow();
     }

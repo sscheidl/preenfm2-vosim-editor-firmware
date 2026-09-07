@@ -63,6 +63,7 @@ void Voice::init() {
 	this->note = 0;
 	this->holdedByPedal = false;
     this->newNotePlayed = false;
+    this->mpeFreqOffset = 0.0f;
 }
 
 
@@ -321,9 +322,19 @@ void Voice::nextBlock() {
 
 
 
-    if (matrix.getDestination(ALL_OSC_FREQ_HARM) != targetFreqHarm)  {
-        targetFreqHarm = matrix.getDestination(ALL_OSC_FREQ_HARM);
+    // mpeFreqOffset is 0.0f unless this voice is driven by an MPE member channel.
+    float newFreqHarm = matrix.getDestination(ALL_OSC_FREQ_HARM) + mpeFreqOffset;
+    if (newFreqHarm != targetFreqHarm)  {
+        targetFreqHarm = newFreqHarm;
         float findex = 512 + targetFreqHarm * 20;
+        // exp2_harm holds 1024 entries and the interpolation reads index + 1, so the
+        // usable range is 0 .. 1022. This expression was never bounded; now that a
+        // second contributor feeds it, it has to be.
+        if (unlikely(findex < 0.0f)) {
+            findex = 0.0f;
+        } else if (unlikely(findex > 1022.0f)) {
+            findex = 1022.0f;
+        }
         int index = findex;
         float fp = findex - index;
         freqHarm = (exp2_harm[index]* (1.0f-fp) + exp2_harm[index + 1] * fp );

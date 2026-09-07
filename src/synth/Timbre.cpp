@@ -532,6 +532,7 @@ Timbre::Timbre() {
     this->holdPedal = false;
     this->lastPlayedVoiceNum = 0;
     this->lastChannelAfterTouch_ = 0.0f;
+    mpeForgetAllChannels();
     // arpegiator
     setNewBPMValue(90);
     arpegiatorStep = 0.0;
@@ -589,6 +590,8 @@ void Timbre::init(int timbreNumber, SynthState* sState) {
 }
 
 void Timbre::setVoiceNumber(int v, int n) {
+	// The voice pool is being redistributed, so no member channel owns a voice any more.
+	mpeForgetAllChannels();
 	voiceNumber[v] = n;
 	if (n >=0) {
 		voices[n]->setCurrentTimbre(this);
@@ -618,7 +621,7 @@ void Timbre::noteOff(uint8_t note) {
 
 int cptHighNote = 0;
 
-void Timbre::preenNoteOn(uint8_t note, uint8_t velocity) {
+int Timbre::preenNoteOn(uint8_t note, uint8_t velocity, bool reuseSameNote) {
 
 	this->lastVelocity = velocity * INV127;
 	bool isUnison = params.engine1.numberOfVoice > 1  && params.engine2.playMode == 2.0f;
@@ -631,7 +634,7 @@ void Timbre::preenNoteOn(uint8_t note, uint8_t velocity) {
 	}
 
 	if (unlikely(iNov == 0)) {
-		return;
+		return -1;
 	}
 
 	unsigned int indexMin = (unsigned int)2147483647;
@@ -648,7 +651,7 @@ void Timbre::preenNoteOn(uint8_t note, uint8_t velocity) {
         }
 
 		// same note = priority 1 : take the voice immediatly
-		if (unlikely(voices[n]->isPlaying() && voices[n]->getNote() == note)) {
+		if (unlikely(reuseSameNote && voices[n]->isPlaying() && voices[n]->getNote() == note)) {
 
 #ifdef DEBUG_VOICE
 		lcd.setRealTimeAction(true);
@@ -673,7 +676,7 @@ void Timbre::preenNoteOn(uint8_t note, uint8_t velocity) {
                 }
 			}
 			this->lastPlayedVoiceNum = n;
-			return;
+			return n;
 		}
 
 		// unlikely because if it true, CPU is not full
@@ -745,6 +748,8 @@ void Timbre::preenNoteOn(uint8_t note, uint8_t velocity) {
 		}
 		lastPlayedVoiceNum = voiceToUse;
 	}
+	// -1 when every voice was already pending a new note and nothing could be used.
+	return voiceToUse;
 }
 
 void Timbre::preenNoteOnUpdateMatrix(int voiceToUse, int note, int velocity) {
@@ -762,6 +767,16 @@ void Timbre::preenNoteOnUpdateMatrix(int voiceToUse, int note, int velocity) {
     // pressure of the note that used it before. Voice::noteOn() and noteOnWithoutPop()
     // do not touch the matrix sources, so it has to be done here.
     voices[voiceToUse]->matrix.setSource(MATRIX_SOURCE_AFTERTOUCH, this->lastChannelAfterTouch_);
+
+    // Same reasoning for the MPE state of that voice. Whoever owned it before does not
+    // own it any more, and the new note must not inherit the previous member bend.
+    // mpeNoteOn() re-establishes both right after this call for an MPE note.
+    voices[voiceToUse]->setMpeFreqOffset(0.0f);
+    for (int c = 0; c < 16; c++) {
+        if (unlikely(mpeVoiceOfChannel_[c] == voiceToUse)) {
+            mpeVoiceOfChannel_[c] = -1;
+        }
+    }
 
 	if (unlikely(this->seqStartUsed[0] != 0xFF)) {
 		voices[voiceToUse]->matrix.computeOneDestination(seqStartUsed[0]);
@@ -4915,6 +4930,8 @@ void Timbre::afterNewParamsLoad() {
     // Voice::afterNewParamsLoad() resets every matrix source of every voice, so the
     // remembered channel pressure must go back to 0 with them.
     this->lastChannelAfterTouch_ = 0.0f;
+    // The voices are about to be reset, so no member channel owns one any more.
+    mpeForgetAllChannels();
 
     for (int k = 0; k < params.engine1.numberOfVoice; k++) {
         voices[voiceNumber[k]]->afterNewParamsLoad();
@@ -5601,6 +5618,101 @@ void Timbre::setMatrixChannelAfterTouch(float newValue) {
     this->lastChannelAfterTouch_ = newValue;
     setMatrixSource(MATRIX_SOURCE_AFTERTOUCH, newValue);
 }
+
+// ---------------------------------------------------------------------------
+// MPE
+//
+// A member channel owns exactly one voice while its note sounds. That association,
+// not the note number, is what every MPE expression message is addressed by: two
+// member channels routinely play the same note number at the same time.
+// ---------------------------------------------------------------------------
+
+void Timbre::mpeForgetAllChannels() {
+    for (int c = 0; c < 16; c++) {
+        mpeVoiceOfChannel_[c] = -1;
+    }
+}
+
+// The voice this member channel owns, or -1. Also drops an association that no longer
+// holds because the voice stopped or was taken over by a non MPE note.
+int Timbre::mpeVoiceOf(uint8_t channel) {
+    if (unlikely(channel > 15)) {
+        return -1;
+    }
+    int n = mpeVoiceOfChannel_[channel];
+    if (n < 0) {
+        return -1;
+    }
+    if (unlikely(!voices[n]->isPlaying())) {
+        mpeVoiceOfChannel_[channel] = -1;
+        return -1;
+    }
+    return n;
+}
+
+void Timbre::mpeNoteOn(uint8_t channel, uint8_t note, uint8_t velocity) {
+    if (unlikely(channel > 15)) {
+        return;
+    }
+    // The member channel can only hold one note at a time. If it still owns one, the
+    // controller never sent its note off, so release it before taking a new voice.
+    int previous = mpeVoiceOf(channel);
+    if (unlikely(previous >= 0)) {
+        voices[previous]->noteOff();
+        mpeVoiceOfChannel_[channel] = -1;
+    }
+
+    // Normal allocator, normal voice, normal matrix update. MPE does not get its own
+    // voice pool : it only remembers which voice the allocator handed out.
+    // reuseSameNote is false because two member channels commonly hold the same note
+    // number, and each of them must own its own voice.
+    int voice = preenNoteOn(note, velocity, false);
+    if (unlikely(voice < 0)) {
+        return;
+    }
+    // preenNoteOnUpdateMatrix() has already dropped whatever member channel owned that
+    // voice before and cleared its bend, so the association can just be recorded.
+    mpeVoiceOfChannel_[channel] = voice;
+}
+
+void Timbre::mpeNoteOff(uint8_t channel, uint8_t note) {
+    int voice = mpeVoiceOf(channel);
+    if (voice < 0) {
+        return;
+    }
+    // Release the voice this channel owns, not "a voice playing that note" : under MPE
+    // several channels can hold the same note number.
+    if (unlikely(holdPedal)) {
+        voices[voice]->setHoldedByPedal(true);
+    } else {
+        voices[voice]->noteOff();
+    }
+    mpeVoiceOfChannel_[channel] = -1;
+}
+
+// Per voice expression. Used for member channel pressure (MATRIX_SOURCE_AFTERTOUCH,
+// the same pressure dimension as channel and polyphonic pressure) and for member
+// channel CC74 (MATRIX_SOURCE_MPESLIDE).
+void Timbre::mpeSetMatrixSource(uint8_t channel, enum SourceEnum source, float newValue) {
+    int voice = mpeVoiceOf(channel);
+    if (voice < 0) {
+        return;
+    }
+    voices[voice]->matrix.setSource(source, newValue);
+}
+
+// Member channel pitch bend. It does NOT go through MATRIX_SOURCE_PITCHBEND: that
+// source is scaled by the preset matrix row multiplier, which tops out at 10 and so
+// cannot reach the +/-48 semitones an MPE controller sends by default. The voice gets
+// a direct frequency offset instead, so no preset and no matrix source changes.
+void Timbre::mpeSetPitchBend(uint8_t channel, float bend, int rangeInSemitones) {
+    int voice = mpeVoiceOf(channel);
+    if (voice < 0) {
+        return;
+    }
+    voices[voice]->setMpeFreqOffset(bend * rangeInSemitones * 0.5f);
+}
+
 
 // Midi polyphonic key pressure : same musical dimension as the channel pressure above,
 // but it only concerns the voice(s) playing that note. lastChannelAfterTouch_ is left

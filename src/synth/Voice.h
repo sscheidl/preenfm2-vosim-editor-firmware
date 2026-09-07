@@ -60,6 +60,11 @@ public:
     uint8_t getNote() { return this->note; }
     uint8_t getNextPendingNote() { return this->nextPendingNote; }
     uint8_t getNextGlidingNote() { return this->nextGlidingNote; }
+
+    // MPE member channel pitch bend, expressed in ALL_OSC_FREQ_HARM units where 1.0
+    // is two semitones. Deliberately outside the matrix : a matrix row multiplier is
+    // capped at 10, which cannot reach the +/-48 semitones MPE uses by default.
+    void setMpeFreqOffset(float freqHarmOffset) { this->mpeFreqOffset = freqHarmOffset; }
     bool isHoldedByPedal() { return this->holdedByPedal; }
     void setHoldedByPedal(bool holded) { this->holdedByPedal = holded; }
     void setCurrentTimbre(Timbre *timbre);    
@@ -394,6 +399,7 @@ private:
     bool gliding;
     float glidePhase;
     uint8_t nextGlidingNote;
+    float mpeFreqOffset;
 
     // unison 
     float noteFrequencyUnison;
