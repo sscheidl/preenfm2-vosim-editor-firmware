@@ -13,7 +13,9 @@ What it does instead:
      'PolA' display entry, no preset structure change;
   2. it asserts that the pieces the design does need are actually present in the real
      sources: the timbre baseline member, the broadcast/selective split, the note-on
-     restore, the reset on new parameter load, and the negative voice index guard;
+     restore, the reset on new parameter load, the negative voice index guard, and
+     that the poly pressure write is unconditional (no unison special case, no early
+     return, so every active voice playing the note is addressed);
   3. it replays the event sequences of the assignment through a transcription of the
      C++ control flow (Timbre::setMatrixChannelAfterTouch, setMatrixPolyAfterTouch,
      preenNoteOn/preenNoteOnUpdateMatrix, afterNewParamsLoad) and checks the resulting
@@ -136,8 +138,10 @@ def test_implementation_present():
           "setMatrixPolyAfterTouch does not require the voice to be playing")
     check("getNote() == note" in poly,
           "setMatrixPolyAfterTouch does not match on the voice note")
-    check("isUnison" in poly and "if (likely(!isUnison))" in poly,
-          "setMatrixPolyAfterTouch is not unison aware")
+    check("isUnison" not in poly,
+          "setMatrixPolyAfterTouch still special cases unison; the rule is unconditional")
+    check("return;" not in poly,
+          "setMatrixPolyAfterTouch still returns early; every matching voice must be written")
     check("MATRIX_SOURCE_AFTERTOUCH" in poly,
           "setMatrixPolyAfterTouch does not write the shared aftertouch source")
 
@@ -243,7 +247,6 @@ class Timbre(object):
 
     # -- Timbre::setMatrixPolyAfterTouch -----------------------------------
     def setMatrixPolyAfterTouch(self, note, value):
-        isUnison = self.numberOfVoice > 1 and self.unison
         for k in range(self.numberOfVoice):
             n = self.voiceNumber[k]
             if n < 0:
@@ -252,8 +255,6 @@ class Timbre(object):
                 continue
             if self.voices[n].getNote() == note:
                 self.voices[n].aftertouch = value
-                if not isUnison:
-                    return
 
     # -- Timbre::preenNoteOnUpdateMatrix (aftertouch part) -----------------
     def preenNoteOnUpdateMatrix(self, n):
@@ -455,6 +456,57 @@ def scenario_repeated_note():
           "repeated note did not restart from the channel baseline")
 
 
+def scenario_duplicate_note_outside_unison():
+    """R1 regression.
+
+    preenNoteOn() skips a voice that is isNewNotePending() (Timbre.cpp:646) and can then
+    allocate a second voice for the same midi note. Both are isPlaying() and both report
+    that note, outside unison. Poly pressure carries no voice instance identity, so both
+    must receive it.
+    """
+    t = Timbre(numberOfVoice=4, unison=False)
+    t.setMatrixChannelAfterTouch(INV127 * 10)
+
+    # voice 0 is finishing note 60 and is pending a new note, voice 1 was allocated for
+    # the very same note 60 because preenNoteOn() skipped voice 0.
+    t.voices[0].playing = True
+    t.voices[0].note = 60
+    t.voices[0].newNotePending = True
+    t.voices[1].playing = True
+    t.voices[1].note = 60
+
+    matching = [k for k in range(t.numberOfVoice)
+                if t.voices[k].isPlaying() and t.voices[k].getNote() == 60]
+    check(len(matching) == 2,
+          "regression setup broken: expected two active voices on note 60, got %d"
+          % len(matching))
+
+    t.setMatrixPolyAfterTouch(60, INV127 * 111)
+    for k in matching:
+        check(near(t.voices[k].aftertouch, INV127 * 111),
+              "duplicate note outside unison: voice %d did not receive poly pressure" % k)
+
+    # and nothing else moved
+    for k in (2, 3):
+        check(near(t.voices[k].aftertouch, INV127 * 10),
+              "duplicate note outside unison: voice %d was written although it does not "
+              "play the note" % k)
+
+
+def scenario_three_voices_same_note():
+    """Same rule with three matching voices, still outside unison."""
+    t = Timbre(numberOfVoice=4, unison=False)
+    for k in range(3):
+        t.voices[k].playing = True
+        t.voices[k].note = 64
+    t.setMatrixPolyAfterTouch(64, INV127 * 77)
+    for k in range(3):
+        check(near(t.voices[k].aftertouch, INV127 * 77),
+              "three matching voices: voice %d missed the poly pressure" % k)
+    check(near(t.voices[3].aftertouch, 0.0),
+          "three matching voices: a non matching voice was written")
+
+
 def main():
     test_no_new_matrix_source()
     test_no_preset_format_change()
@@ -472,7 +524,11 @@ def main():
                      ("H sustain", scenario_H),
                      ("I multitimbral", scenario_I),
                      ("J boundary values", scenario_J),
-                     ("K repeated same note", scenario_repeated_note)):
+                     ("K repeated same note", scenario_repeated_note),
+                     ("L duplicate note outside unison (R1)",
+                      scenario_duplicate_note_outside_unison),
+                     ("M three voices on the same note (R1)",
+                      scenario_three_voices_same_note)):
         before = len(failures)
         fn()
         status = "ok" if len(failures) == before else "FAILED"

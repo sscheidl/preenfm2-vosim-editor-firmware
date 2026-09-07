@@ -35,7 +35,11 @@ No existing 3.00 alpha or editor-protocol work was discarded or overwritten.
 | # | SHA | subject |
 |---|---|---|
 | 1 | `6fdc28c` | Add true polyphonic key pressure on the shared AftT source |
-| 2 | branch HEAD | Add PolyAT implementation report and host state test |
+| 2 | `99d7d1b` | Add PolyAT implementation report and host state test |
+| 3 | branch HEAD | Review finding R1: write poly pressure to every matching voice |
+
+Commits 1 and 2 are the two reviewed commits and were **not** rewritten. Commit 3 is the
+corrective commit for review finding **R1** (see §8).
 
 ## 4. Files changed
 
@@ -53,6 +57,14 @@ Commit 2 (no firmware code):
 |---|---|
 | `docs/POLYAT_IMPLEMENTATION_REPORT.md` | this report |
 | `test/host/polyat_state_test.py` | host state/structure test |
+
+Commit 3 (R1 correction):
+
+| file | change |
+|---|---|
+| `src/synth/Timbre.cpp` | `setMatrixPolyAfterTouch()`: drop the `isUnison` branch and the early return |
+| `test/host/polyat_state_test.py` | invert the structural assertion, +2 regression scenarios |
+| `docs/POLYAT_IMPLEMENTATION_REPORT.md` | matching policy, limitations, build figures |
 
 Nothing else is touched. In particular `src/synth/Common.h`, `src/synth/SynthState.cpp`,
 `src/filesystem/**` and `src/utils/**` are byte-identical to the base.
@@ -98,7 +110,7 @@ lives in `Timbre` and is not duplicated in the decoder.
         if !voices[n]->isPlaying(): continue
         if voices[n]->getNote() == note:
             voices[n]->matrix.setSource(MATRIX_SOURCE_AFTERTOUCH, newValue)
-            if !isUnison: return
+            # no early exit: every matching active voice is written
 
 Called from `MidiDecoder.cpp:281` with note `value[0]` and `INV127 * value[1]`, i.e.
 normalised exactly like the channel pressure. `lastChannelAfterTouch_` is deliberately
@@ -154,18 +166,38 @@ matrix source, so the explicit restore is required.
   `shiftNote` transform was added** — the PFM2 note on/off path uses `midiEvent.value[0]`
   directly (`MidiDecoder.cpp:254`–`271`), so poly pressure uses the same identity.
 
-**Normal polyphony: first match, then return.** Source inspection supports this:
-`preenNoteOn()` gives an already sounding identical note priority 1 and reuses that very
-voice (`Timbre.cpp:650`–`677`), so a note number normally maps to at most one voice per
-timbre. One transient exception exists and is documented in §17.
+**All matching active voices, in every play mode. No early exit, no unison special
+case.** A MIDI poly pressure message carries channel + note + pressure and **no voice
+instance identity**, so the only deterministic rule is to address every voice that
+currently plays that note:
 
-**Unison: all matching voices, no `break`.** `isUnison` is
-`numberOfVoice > 1 && playMode == 2.0f` (matching `Timbre.cpp:624`), and in unison every
-voice of the timbre plays the same note (`Timbre.cpp:666`–`674`, `730`–`743`). The
-preenfm3 implementation (`Ixox/preenfm3` @ `65cb963`, `Timbre.cpp:3095`) breaks after the first match;
-copying that would modulate one voice of the stack and leave the rest behind. The
-existing PFM2 unison-aware patterns `preenNoteOff()` (`Timbre.cpp:796`) and
-`propagateCvFreq()` (`Timbre.cpp:779`) were used as the reference.
+    for every allocated voice of the addressed timbre:
+        if playing and getNote() == note:  write MATRIX_SOURCE_AFTERTOUCH
+
+Two independent reasons make this the correct rule rather than a defensive one:
+
+- **Unison** — `numberOfVoice > 1 && playMode == 2.0f` (`Timbre.cpp:624`): every voice of
+  the timbre plays the same note (`Timbre.cpp:666`–`674`, `730`–`743`). The preenfm3
+  implementation (`Ixox/preenfm3` @ `65cb963`, `Timbre.cpp:3095`) breaks after the first
+  match; copying that would modulate one voice of the stack and leave the rest behind.
+- **Normal polyphony** — a note number can map to more than one active voice here too.
+  `preenNoteOn()` skips a voice that is `isNewNotePending()` (`Timbre.cpp:646`) and can
+  then allocate a *second* voice for the same note while the first one is still
+  finishing its quick-dead crossfade. Both are `isPlaying()` and both report that note.
+  A first-match-wins search would write only one of them, and which one it picked would
+  depend on `voiceNumber[]` order.
+
+An earlier revision of this branch special-cased unison and returned after the first
+match in normal polyphony. Independent review finding **R1** rejected that, and the
+unconditional rule replaces it: it is simpler, has no play-mode branch, and covers unison
+as an ordinary consequence rather than a special case. The existing PFM2 patterns
+`preenNoteOff()` (`Timbre.cpp:796`) and `propagateCvFreq()` (`Timbre.cpp:779`) were the
+starting reference; poly pressure goes further than both by dropping their early return
+entirely.
+
+Cost: the loop always runs over `numberOfVoice` entries instead of stopping early — at
+most 14 iterations of two cheap comparisons, in a MIDI event handler, not in the audio
+block path.
 
 ## 9. Preset / reset behaviour
 
@@ -277,27 +309,37 @@ independent make invocation.
 | `pfmcv` | PASS | 358 616 | 303 800 | 54 816 | 101 268 | 103 |
 | `pfmcvo` | PASS | 358 616 | 303 800 | 54 816 | 101 268 | 103 |
 
-### With polyphonic aftertouch (commit `6fdc28c`)
+### With polyphonic aftertouch, after the R1 correction (branch HEAD)
+
+Rebuilt clean, all four targets, same substitute toolchain and same shims as the baseline.
 
 | target | result | `.bin` | `.text` | `.data` | `.bss` | warnings |
 |---|---|---|---|---|---|---|
-| `pfm` | **PASS** | 356 416 | 301 616 | 54 800 | 100 948 | 102 |
-| `pfmo` | **PASS** | 356 416 | 301 616 | 54 800 | 100 948 | 102 |
-| `pfmcv` | **PASS** | 359 448 | 304 632 | 54 816 | 101 284 | 103 |
-| `pfmcvo` | **PASS** | 359 448 | 304 632 | 54 816 | 101 284 | 103 |
+| `pfm` | **PASS** | 356 352 | 301 552 | 54 800 | 100 948 | 102 |
+| `pfmo` | **PASS** | 356 352 | 301 552 | 54 800 | 100 948 | 102 |
+| `pfmcv` | **PASS** | 359 384 | 304 568 | 54 816 | 101 284 | 103 |
+| `pfmcvo` | **PASS** | 359 384 | 304 568 | 54 816 | 101 284 | 103 |
 
-`pfm` and `pfmo` are byte-identical to each other (md5 `a4eb9627…`), as are `pfmcv` and
-`pfmcvo` (md5 `c30176c2…`). All four were verified to be genuinely distinct builds: the
-CVIN variants carry the `CV1` source name and are 2 968 bytes larger.
+`pfm` and `pfmo` are byte-identical to each other (md5 `adbd3b28…`), as are `pfmcv` and
+`pfmcvo` (md5 `f4f4bbba…`).
+
+All four were verified to be genuinely distinct builds: the CVIN variants carry the
+`CV1` source name and are 3 032 bytes larger than the non-CVIN ones.
+
+For reference, the pre-R1 revision (`6fdc28c`) produced 356 416 / 359 448 byte binaries.
+Removing the `isUnison` computation and the conditional early return made the firmware
+**64 bytes smaller** in every variant, so R1 costs no flash at all — it saves a little.
 
 ## 14. Binary / memory deltas
 
+Branch HEAD against the `ed8a866` baseline, same toolchain both sides:
+
 | target | `.bin` | `.text` | `.data` | `.bss` |
 |---|---|---|---|---|
-| `pfm` | **+768** | +768 | 0 | **+16** |
-| `pfmo` | **+768** | +768 | 0 | **+16** |
-| `pfmcv` | **+832** | +832 | 0 | **+16** |
-| `pfmcvo` | **+832** | +832 | 0 | **+16** |
+| `pfm` | **+704** | +704 | 0 | **+16** |
+| `pfmo` | **+704** | +704 | 0 | **+16** |
+| `pfmcv` | **+768** | +768 | 0 | **+16** |
+| `pfmcvo` | **+768** | +768 | 0 | **+16** |
 
 The 16 bytes are `lastChannelAfterTouch_` × 4 timbres and land in CCMRAM, as designed —
 there is **no per-voice cost**, `Matrix::sources[]` is unchanged:
@@ -326,14 +368,18 @@ all four targets, and **no warning at all is emitted for `Timbre.cpp`, `Timbre.h
 
 **Hardware was not available. No hardware validation is claimed.**
 
-`test/host/polyat_state_test.py` — 69 checks, all pass. It does two things:
+`test/host/polyat_state_test.py` — 79 checks in 13 scenarios, all pass. It does two things:
 
 1. **Structural assertions against the real sources**: no
    `MATRIX_SOURCE_POLYPHONIC_AFTERTOUCH` anywhere, `SourceEnum` still ends
    `MPESLIDE, RANDOM, MAX`, `AFTERTOUCH` still id 10, both `#ifdef CVIN` display tables
    still 21 / 25 entries, no `PolA` name, `MatrixRowParams` unchanged, no MPE symbol, the
    editor protocol constants unchanged — plus the presence of the baseline member, the
-   broadcast/selective split, the note-on restore, the reset, and the `n < 0` guard.
+   broadcast/selective split, the note-on restore, the reset, the `n < 0` guard, and
+   that the poly pressure write is unconditional (no `isUnison`, no `return;` in the
+   function body). That last assertion was verified to be non-vacuous: reinstating the
+   early exit makes the test fail with
+   *"setMatrixPolyAfterTouch still returns early; every matching voice must be written"*.
 2. **State-model simulation** of the assignment's event sequences, through a
    transcription of the C++ control flow.
 
@@ -350,6 +396,8 @@ all four targets, and **no warning at all is emitted for `Timbre.cpp`, `Timbre.h
 | I | two timbres, PolyAT on one | the other timbre unchanged | pass |
 | J | PolyAT 0, 127, rapid changes | value always within 0.0 … 1.0 | pass |
 | K | repeated same note | restarts from the baseline | pass |
+| L | two active voices on the same note, **outside unison** (R1) | **both** receive the pressure, non-matching voices untouched | pass |
+| M | three active voices on the same note, outside unison (R1) | all three receive it, the fourth does not | pass |
 
 `test/host/protocol_sim_test.py` was re-run against the modified tree: **all checks pass**,
 no editor-protocol regression.
@@ -415,21 +463,15 @@ Smoothing is explicitly **not** addressed in this task.
    extended; reasoning in §10.
 2. **Arpeggiator with octave > 1** — poly pressure does not follow transposed notes.
    Reasoning in §11.
-3. **Duplicate note, transient** — `preenNoteOn()` skips a voice in
-   `isNewNotePending()` state (`Timbre.cpp:646`) and may allocate a second voice for a
-   note number that an outgoing voice still reports. During that window (one audio
-   block, ~0.7 ms at 46.9 kHz / `BLOCK_SIZE 32`) two voices can match, and first-match
-   wins picks the lower `voiceNumber[]` slot. Not audible in practice; noted for
-   completeness rather than as a defect.
-4. **MIDI note 0** — not a limitation of this implementation, but note that
+3. **MIDI note 0** — not a limitation of this implementation, but note that
    `nextGlidingNote == 0` doubles as the "not gliding" marker in the existing code
    (see §10).
-5. **Behaviour extension, by design** — an existing preset routing `AftT` responds
+4. **Behaviour extension, by design** — an existing preset routing `AftT` responds
    note-locally as soon as poly pressure arrives, with no way to switch that off. Without
    poly pressure messages the observable aftertouch behaviour is functionally equivalent
    to 3.00 alpha. This is intentional under option B and belongs in the changelog.
-6. **Builds are not release-valid** — substitute toolchain, see §13.
-7. **No hardware validation** — §16 is entirely open.
+5. **Builds are not release-valid** — substitute toolchain, see §13.
+6. **No hardware validation** — §16 is entirely open.
 
 ## 18. MPE
 
@@ -466,16 +508,20 @@ same mechanisms MPE will need, and the preenfm3 history (`3a2e17a` introduced
 
 Branch: `feature/true-poly-aftertouch`, based on `ed8a866`.
 
-    commit 1   6fdc28c   firmware change (the only commit touching src/)
-    commit 2   HEAD      this report + test/host/polyat_state_test.py
+    commit 1   6fdc28c   firmware change
+    commit 2   99d7d1b   this report + test/host/polyat_state_test.py
+    commit 3   HEAD      review finding R1 correction (firmware + test + this report)
 
-Commit 2 is the branch HEAD. Its SHA is deliberately not written into this file: the
-file is part of that commit, so quoting the SHA here could only ever be stale. Read it
-with `git rev-parse feature/true-poly-aftertouch`, or from the push output.
+Commits 1 and 2 were **not** rewritten. Commit 3 is the branch HEAD; its SHA is
+deliberately not written into this file, because the file is part of that commit and any
+SHA quoted here could only ever be stale. Read it with
+`git rev-parse feature/true-poly-aftertouch`, or from the push output.
+
+`src/` is touched by commit 1 and commit 3 only.
 
 ---
 
-**IMPLEMENTATION GATE: PASS FOR INDEPENDENT REVIEW**
+**IMPLEMENTATION GATE: PASS FOR INDEPENDENT REVIEW** — review finding R1 applied.
 
 with the two limitations stated plainly: the four builds were produced with a
 **substitute toolchain (GCC 13.2, not the documented GCC 4.7.4)** and are **not

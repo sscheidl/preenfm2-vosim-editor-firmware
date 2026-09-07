@@ -5605,9 +5605,14 @@ void Timbre::setMatrixChannelAfterTouch(float newValue) {
 // Midi polyphonic key pressure : same musical dimension as the channel pressure above,
 // but it only concerns the voice(s) playing that note. lastChannelAfterTouch_ is left
 // untouched on purpose, it stays the timbre wide baseline.
+//
+// A poly pressure message carries channel + note + pressure and no voice instance
+// identity, so every active voice playing that note is addressed, in every play mode.
+// There is no early exit on the first match : in unison the whole stack plays the note,
+// and even in normal polyphony preenNoteOn() skips a voice that is isNewNotePending()
+// and can allocate a second voice for the same note while the first one is still
+// finishing, so more than one voice can report that note.
 void Timbre::setMatrixPolyAfterTouch(uint8_t note, float newValue) {
-    bool isUnison = params.engine1.numberOfVoice > 1 && params.engine2.playMode == 2.0f;
-
     int iNov = (int) params.engine1.numberOfVoice;
     for (int k = 0; k < iNov; k++) {
         // voice number k of timbre
@@ -5625,11 +5630,6 @@ void Timbre::setMatrixPolyAfterTouch(uint8_t note, float newValue) {
 
         if (voices[n]->getNote() == note) {
             voices[n]->matrix.setSource(MATRIX_SOURCE_AFTERTOUCH, newValue);
-            // In unison every voice of the timbre plays that same note and they must all
-            // follow the pressure, otherwise the unison stack drifts apart.
-            if (likely(!isUnison)) {
-                return;
-            }
         }
     }
 }
