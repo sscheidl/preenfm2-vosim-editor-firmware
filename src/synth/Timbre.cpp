@@ -532,6 +532,7 @@ Timbre::Timbre() {
     this->holdPedal = false;
     this->lastPlayedVoiceNum = 0;
     this->lastChannelAfterTouch_ = 0.0f;
+    this->lastSlide_ = 0.0f;
     mpeForgetAllChannels();
     // arpegiator
     setNewBPMValue(90);
@@ -767,6 +768,10 @@ void Timbre::preenNoteOnUpdateMatrix(int voiceToUse, int note, int velocity) {
     // pressure of the note that used it before. Voice::noteOn() and noteOnWithoutPop()
     // do not touch the matrix sources, so it has to be done here.
     voices[voiceToUse]->matrix.setSource(MATRIX_SOURCE_AFTERTOUCH, this->lastChannelAfterTouch_);
+    // CC74 needs exactly the same restore: an MPE member channel writes it per voice,
+    // and nothing else would clear it. The broadcast already wrote this value to every
+    // voice, so for ordinary midi this write is idempotent.
+    voices[voiceToUse]->matrix.setSource(MATRIX_SOURCE_MPESLIDE, this->lastSlide_);
 
     // Same reasoning for the MPE state of that voice. Whoever owned it before does not
     // own it any more, and the new note must not inherit the previous member bend.
@@ -4930,6 +4935,7 @@ void Timbre::afterNewParamsLoad() {
     // Voice::afterNewParamsLoad() resets every matrix source of every voice, so the
     // remembered channel pressure must go back to 0 with them.
     this->lastChannelAfterTouch_ = 0.0f;
+    this->lastSlide_ = 0.0f;
     // The voices are about to be reset, so no member channel owns one any more.
     mpeForgetAllChannels();
 
@@ -5617,6 +5623,13 @@ void Timbre::setMatrixSource(enum SourceEnum source, float newValue) {
 void Timbre::setMatrixChannelAfterTouch(float newValue) {
     this->lastChannelAfterTouch_ = newValue;
     setMatrixSource(MATRIX_SOURCE_AFTERTOUCH, newValue);
+}
+
+// CC74 for the whole timbre. Same shape as the channel pressure above: broadcast to
+// every voice and remembered, so a voice starting a note can be given it back.
+void Timbre::setMatrixSlide(float newValue) {
+    this->lastSlide_ = newValue;
+    setMatrixSource(MATRIX_SOURCE_MPESLIDE, newValue);
 }
 
 // ---------------------------------------------------------------------------

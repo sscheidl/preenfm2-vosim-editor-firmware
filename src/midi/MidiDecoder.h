@@ -220,8 +220,8 @@ public:
     void newParamValue(int timbre, int currentrow, int encoder, ParameterDisplay* param, float oldValue, float newValue);
     void newcurrentRow(int timbre, int newcurrentRow) {}
     void beforeNewParamsLoad(int timbre) {}
-    void afterNewParamsLoad(int timbre) {}
-    void afterNewComboLoad() {}
+    void afterNewParamsLoad(int timbre) { mpeForgetAllChannelState(); }
+    void afterNewComboLoad() { mpeForgetAllChannelState(); }
     void showAlgo() {}
     void showIMInformation() {}
 
@@ -275,10 +275,20 @@ private:
     float mpePressure[16];
     float mpeSlide[16];
     float mpeBend[16];
+    // R3. "no member value received yet" must not look like an explicit 0, otherwise a
+    // note on would overwrite the manager baseline the voice was just given. Bend needs
+    // no such flag: an unseen bend is 0.0f, which is the centre, which is exactly what
+    // preenNoteOnUpdateMatrix() already left on the voice.
+    bool mpePressureSeen[16];
+    bool mpeSlideSeen[16];
     // R2. Minimal RPN selection state per channel, only while MPE is on. 0x7F/0x7F is
     // RPN Null, i.e. nothing selected.
     uint8_t mpeRpnMsb[16];
     uint8_t mpeRpnLsb[16];
+    // R4. Detects an MPE configuration change so the state above can be dropped without
+    // needing a hook in the menu.
+    int mpeLastTimbre;
+    int mpeLastManager;
     unsigned char runningStatus;
 
     // Midi Clock

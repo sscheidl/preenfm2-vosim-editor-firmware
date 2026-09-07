@@ -324,6 +324,9 @@ public:
     void afterNewParamsLoad() {
         this->matrix.resetSources();
         this->matrix.resetAllDestination();
+        // R4. mpeFreqOffset lives outside the matrix, so resetSources() does not reach
+        // it. A parameter or preset load must leave no member channel bend behind.
+        this->mpeFreqOffset = 0.0f;
         for (int j=0; j<NUMBER_OF_ENCODERS; j++) {
             this->lfoOsc[0].valueChanged(j);
             this->lfoOsc[1].valueChanged(j);

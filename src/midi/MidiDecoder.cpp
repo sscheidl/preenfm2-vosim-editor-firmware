@@ -51,6 +51,8 @@ MidiDecoder::MidiDecoder() {
     usbBufRead = usbBuf;
     usbBufWrite = usbBuf;
     sysexIndex = 0;
+    mpeLastTimbre = -1;
+    mpeLastManager = -1;
     mpeForgetAllChannelState();
 
     for (int k=0; k<64; k++) {
@@ -344,10 +346,18 @@ void MidiDecoder::midiEventReceived(MidiEvent midiEvent) {
 
 int MidiDecoder::getMpeTimbre() {
     int instrument = this->synthState->fullState.midiConfigValue[MIDICONFIG_MPE_INST];
-    if (likely(instrument == 0)) {
-        return -1;
+    int timbre = (instrument == 0) ? -1 : (instrument - 1);
+    int manager = this->synthState->fullState.midiConfigValue[MIDICONFIG_MPE_MASTER];
+    // R4. Switching MPE off, moving it to another timbre or moving the zone must not
+    // leave expression behind that a later member note on could pick up. Detecting it
+    // here avoids a hook in the menu code for a setting that is read on every event
+    // anyway.
+    if (unlikely(timbre != mpeLastTimbre || manager != mpeLastManager)) {
+        mpeLastTimbre = timbre;
+        mpeLastManager = manager;
+        mpeForgetAllChannelState();
     }
-    return instrument - 1;
+    return timbre;
 }
 
 bool MidiDecoder::isMpeManagerChannel(uint8_t channel) {
@@ -373,6 +383,8 @@ void MidiDecoder::mpeForgetChannelState(uint8_t channel) {
     mpePressure[channel] = 0.0f;
     mpeSlide[channel] = 0.0f;
     mpeBend[channel] = 0.0f;
+    mpePressureSeen[channel] = false;
+    mpeSlideSeen[channel] = false;
     mpeRpnMsb[channel] = 0x7F;
     mpeRpnLsb[channel] = 0x7F;
 }
@@ -382,6 +394,8 @@ void MidiDecoder::mpeForgetAllChannelState() {
         mpePressure[c] = 0.0f;
         mpeSlide[c] = 0.0f;
         mpeBend[c] = 0.0f;
+        mpePressureSeen[c] = false;
+        mpeSlideSeen[c] = false;
         mpeRpnMsb[c] = 0x7F;
         mpeRpnLsb[c] = 0x7F;
     }
@@ -472,9 +486,19 @@ void MidiDecoder::mpeEventReceived(int timbre, MidiEvent& midiEvent) {
             visualInfo->noteOn(timbre, true);
             // Expression the controller sent just before the note on belongs to this
             // note. mpeNoteOn() has just restored the timbre baseline on that voice,
-            // so these three writes come after it on purpose.
-            mpeTimbre->mpeSetMatrixSource(channel, MATRIX_SOURCE_AFTERTOUCH, mpePressure[channel]);
-            mpeTimbre->mpeSetMatrixSource(channel, MATRIX_SOURCE_MPESLIDE, mpeSlide[channel]);
+            // so these writes come after it on purpose.
+            // R3. Only values this member channel actually sent are applied. Writing an
+            // unseen 0 would wipe out the manager pressure baseline that
+            // preenNoteOnUpdateMatrix() just restored, and the manager CC74 broadcast
+            // that the voice already carries.
+            if (mpePressureSeen[channel]) {
+                mpeTimbre->mpeSetMatrixSource(channel, MATRIX_SOURCE_AFTERTOUCH, mpePressure[channel]);
+            }
+            if (mpeSlideSeen[channel]) {
+                mpeTimbre->mpeSetMatrixSource(channel, MATRIX_SOURCE_MPESLIDE, mpeSlide[channel]);
+            }
+            // Bend needs no such test : unseen is 0.0f, the centre, which is what
+            // preenNoteOnUpdateMatrix() already left on the voice.
             mpeTimbre->mpeSetPitchBend(channel, mpeBend[channel], bendRange);
         }
         break;
@@ -483,6 +507,7 @@ void MidiDecoder::mpeEventReceived(int timbre, MidiEvent& midiEvent) {
         // written only to the voice this member channel owns. It must not touch the
         // timbre wide baseline lastChannelAfterTouch_.
         mpePressure[channel] = INV127 * midiEvent.value[0];
+        mpePressureSeen[channel] = true;
         mpeTimbre->mpeSetMatrixSource(channel, MATRIX_SOURCE_AFTERTOUCH, mpePressure[channel]);
         break;
     case MIDI_PITCH_BEND: {
@@ -498,6 +523,7 @@ void MidiDecoder::mpeEventReceived(int timbre, MidiEvent& midiEvent) {
         // to synth parameters, and a member channel must never edit the patch.
         if (midiEvent.value[0] == CC_MPE_SLIDE_CC74) {
             mpeSlide[channel] = INV127 * midiEvent.value[1];
+            mpeSlideSeen[channel] = true;
             mpeTimbre->mpeSetMatrixSource(channel, MATRIX_SOURCE_MPESLIDE, mpeSlide[channel]);
         }
         break;
@@ -527,9 +553,17 @@ void MidiDecoder::controlChange(int timbre, MidiEvent& midiEvent) {
         break;
     case CC_ALL_NOTES_OFF:
         this->synth->allNoteOff(timbre);
+        // R4. Synth::allNoteOff() drops the timbre side associations; the decoder side
+        // member expression has to go with them.
+        if (unlikely(getMpeTimbre() == timbre)) {
+            mpeForgetAllChannelState();
+        }
         break;
     case CC_ALL_SOUND_OFF:
         this->synth->allSoundOff(timbre);
+        if (unlikely(getMpeTimbre() == timbre)) {
+            mpeForgetAllChannelState();
+        }
         break;
     case CC_HOLD_PEDAL:
         this->synth->setHoldPedal(timbre, midiEvent.value[1]);
@@ -552,6 +586,9 @@ void MidiDecoder::controlChange(int timbre, MidiEvent& midiEvent) {
         this->synth->allNoteOff(timbre);
         this->runningStatus = 0;
         this->songPosition = 0;
+        if (unlikely(getMpeTimbre() == timbre)) {
+            mpeForgetAllChannelState();
+        }
         break;
     case CC_SCALA_ENABLE:
         this->synth->setScalaEnable(midiEvent.value[1] > 0);
@@ -756,7 +793,7 @@ void MidiDecoder::controlChange(int timbre, MidiEvent& midiEvent) {
                     (float)midiEvent.value[1]);
             break;
         case CC_MPE_SLIDE_CC74:
-            this->synth->getTimbre(timbre)->setMatrixSource(MATRIX_SOURCE_MPESLIDE, INV127 * midiEvent.value[1]);
+            this->synth->getTimbre(timbre)->setMatrixSlide(INV127 * midiEvent.value[1]);
             break;
         case CC_PAN:
             this->synth->getTimbre(timbre)->setLeftRightBalance(INV128 * (midiEvent.value[1] + 1));

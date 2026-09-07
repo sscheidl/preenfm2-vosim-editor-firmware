@@ -113,6 +113,7 @@ public:
     void resetMatrixDestination(float oldValue);
     void setMatrixSource(enum SourceEnum source, float newValue);
     void setMatrixChannelAfterTouch(float newValue);
+    void setMatrixSlide(float newValue);
     void setMatrixPolyAfterTouch(uint8_t note, float newValue);
 
     // MPE : a member channel owns exactly one voice for the lifetime of its note.
@@ -190,6 +191,10 @@ private:
     // note is given this baseline back so that it never inherits the polyphonic
     // pressure of the note that used the same voice before.
     float lastChannelAfterTouch_;
+    // Same role as lastChannelAfterTouch_ but for CC74 / MATRIX_SOURCE_MPESLIDE. A
+    // voice starting a note is given this timbre wide value back, so it cannot inherit
+    // the per voice slide an MPE member channel left on it.
+    float lastSlide_;
     // MPE member channel -> voice number, indexed by midi channel 0..15, -1 when the
     // channel currently owns no voice. This is the defining MPE identity : a note is
     // addressed by its member channel, never by its note number.
