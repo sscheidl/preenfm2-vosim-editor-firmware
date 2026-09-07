@@ -275,12 +275,15 @@ void MidiDecoder::midiEventReceived(MidiEvent midiEvent) {
         }
         break;
     case MIDI_POLY_AFTER_TOUCH:
-        // We don't do anything
-        // this->synth->getMatrix()->setSource(MATRIX_SOURCE_AFTERTOUCH, midiEvent.value[1]);
+        // Same modulation source as the channel pressure below, but written only on the
+        // voice(s) playing that note. value[0] is the note, value[1] the pressure.
+        for (int tk = 0; tk< timbreIndex; tk++ ) {
+            this->synth->getTimbre(timbres[tk])->setMatrixPolyAfterTouch(midiEvent.value[0], INV127*midiEvent.value[1]);
+        }
         break;
     case MIDI_AFTER_TOUCH:
         for (int tk = 0; tk< timbreIndex; tk++ ) {
-            this->synth->getTimbre(timbres[tk])->setMatrixSource(MATRIX_SOURCE_AFTERTOUCH, INV127*midiEvent.value[0]);
+            this->synth->getTimbre(timbres[tk])->setMatrixChannelAfterTouch(INV127*midiEvent.value[0]);
         }
         break;
     case MIDI_PITCH_BEND:

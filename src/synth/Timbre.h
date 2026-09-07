@@ -107,6 +107,8 @@ public:
 
     void resetMatrixDestination(float oldValue);
     void setMatrixSource(enum SourceEnum source, float newValue);
+    void setMatrixChannelAfterTouch(float newValue);
+    void setMatrixPolyAfterTouch(uint8_t note, float newValue);
     void verifyLfoUsed(int encoder, float oldValue, float newValue);
 
     void midiClockStop() {
@@ -170,6 +172,12 @@ private:
     Voice *voices[MAX_NUMBER_OF_VOICES];
     bool holdPedal;
     uint8_t lastPlayedVoiceNum;
+    // Last midi channel pressure received by this timbre, 0.0f .. 1.0f.
+    // Channel pressure is the pressure baseline of the whole timbre, polyphonic key
+    // pressure only overrides it on the voice playing the note. A voice starting a new
+    // note is given this baseline back so that it never inherits the polyphonic
+    // pressure of the note that used the same voice before.
+    float lastChannelAfterTouch_;
 #ifdef CVIN
     float cvFrequency;
 #endif

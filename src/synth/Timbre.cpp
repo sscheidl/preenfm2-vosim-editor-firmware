@@ -531,6 +531,7 @@ Timbre::Timbre() {
     this->sbMax = &this->sampleBlock[64];
     this->holdPedal = false;
     this->lastPlayedVoiceNum = 0;
+    this->lastChannelAfterTouch_ = 0.0f;
     // arpegiator
     setNewBPMValue(90);
     arpegiatorStep = 0.0;
@@ -755,6 +756,12 @@ void Timbre::preenNoteOnUpdateMatrix(int voiceToUse, int note, int velocity) {
     }
 
     voices[voiceToUse]->matrix.setSource(MATRIX_SOURCE_RANDOM, noise[voiceToUse]);
+
+    // This voice may just have been stolen or recycled. Restart it from the current
+    // channel pressure of the timbre so that it cannot inherit the polyphonic key
+    // pressure of the note that used it before. Voice::noteOn() and noteOnWithoutPop()
+    // do not touch the matrix sources, so it has to be done here.
+    voices[voiceToUse]->matrix.setSource(MATRIX_SOURCE_AFTERTOUCH, this->lastChannelAfterTouch_);
 
 	if (unlikely(this->seqStartUsed[0] != 0xFF)) {
 		voices[voiceToUse]->matrix.computeOneDestination(seqStartUsed[0]);
@@ -4905,6 +4912,10 @@ void Timbre::initADSRloop() {
 }
 
 void Timbre::afterNewParamsLoad() {
+    // Voice::afterNewParamsLoad() resets every matrix source of every voice, so the
+    // remembered channel pressure must go back to 0 with them.
+    this->lastChannelAfterTouch_ = 0.0f;
+
     for (int k = 0; k < params.engine1.numberOfVoice; k++) {
         voices[voiceNumber[k]]->afterNewParamsLoad();
     }
@@ -5581,6 +5592,45 @@ void Timbre::resetMatrixDestination(float oldValue) {
 void Timbre::setMatrixSource(enum SourceEnum source, float newValue) {
     for (int k = 0; k < params.engine1.numberOfVoice; k++) {
         voices[voiceNumber[k]]->matrix.setSource(source, newValue);
+    }
+}
+
+// Midi channel pressure : the pressure of the whole timbre. It is broadcast to every
+// voice, and remembered so that a voice starting a new note can be given it back.
+void Timbre::setMatrixChannelAfterTouch(float newValue) {
+    this->lastChannelAfterTouch_ = newValue;
+    setMatrixSource(MATRIX_SOURCE_AFTERTOUCH, newValue);
+}
+
+// Midi polyphonic key pressure : same musical dimension as the channel pressure above,
+// but it only concerns the voice(s) playing that note. lastChannelAfterTouch_ is left
+// untouched on purpose, it stays the timbre wide baseline.
+void Timbre::setMatrixPolyAfterTouch(uint8_t note, float newValue) {
+    bool isUnison = params.engine1.numberOfVoice > 1 && params.engine2.playMode == 2.0f;
+
+    int iNov = (int) params.engine1.numberOfVoice;
+    for (int k = 0; k < iNov; k++) {
+        // voice number k of timbre
+        int n = voiceNumber[k];
+
+        // Not allocated to this timbre
+        if (unlikely(n < 0)) {
+            continue;
+        }
+
+        // Not playing = nothing to press on
+        if (unlikely(!voices[n]->isPlaying())) {
+            continue;
+        }
+
+        if (voices[n]->getNote() == note) {
+            voices[n]->matrix.setSource(MATRIX_SOURCE_AFTERTOUCH, newValue);
+            // In unison every voice of the timbre plays that same note and they must all
+            // follow the pressure, otherwise the unison stack drifts apart.
+            if (likely(!isUnison)) {
+                return;
+            }
+        }
     }
 }
 
