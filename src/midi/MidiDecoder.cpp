@@ -210,18 +210,38 @@ void MidiDecoder::midiEventReceived(MidiEvent midiEvent) {
     int timbreIndex = 0;
     int timbres[4];
 
-    // MPE. A member channel of the zone belongs to the MPE timbre and never takes part
-    // in the ordinary channel routing below : not per timbre channels, not the global
-    // channel, not the current instrument channel, not omni. The master channel is
-    // deliberately left to the ordinary routing, which is exactly the zone wide
-    // behaviour MPE asks for (see docs/MPE_IMPLEMENTATION_REPORT.md).
+    // MPE. Both zone channels are taken out of the ordinary channel routing below :
+    // not per timbre channels, not the global channel, not the current instrument
+    // channel, not omni.
     int mpeTimbre = getMpeTimbre();
-    if (unlikely(mpeTimbre >= 0 && isMpeMemberChannel(midiEvent.channel))) {
-        mpeEventReceived(mpeTimbre, midiEvent);
-        return;
+    if (unlikely(mpeTimbre >= 0)) {
+        // R2. RPN belongs to the zone, and CC 100/101 are CC_ARP_CLOCK and
+        // CC_ARP_DIRECTION in this firmware while CC 6/38 are the nrpn data entry
+        // bytes. A configuration message must never reach either of them.
+        if (midiEvent.eventType == MIDI_CONTROL_CHANGE && mpeConsumeRpn(midiEvent)) {
+            return;
+        }
+        // A member channel is per voice expression for the MPE timbre.
+        if (isMpeMemberChannel(midiEvent.channel)) {
+            mpeEventReceived(mpeTimbre, midiEvent);
+            return;
+        }
+        // R1. The manager channel is zone wide expression for the MPE timbre, and for
+        // that timbre only. It used to fall through to the ordinary routing, which is
+        // the same thing only when the MPE timbre happens to be the one configured on
+        // that channel; with MPE inst 2, manager 1 and timbre 1 on channel 1 the
+        // manager reached timbre 1 instead. Addressing the MPE timbre explicitly and
+        // then running the ordinary message switch keeps every zone wide meaning -
+        // channel pressure baseline, pitch bend, CC74, CC64 sustain, notes - while
+        // making the target correct.
+        if (isMpeManagerChannel(midiEvent.channel)) {
+            timbres[timbreIndex++] = mpeTimbre;
+        }
     }
     // Just one test for global midi channel to optimize
-    if (unlikely(midiEvent.channel == (this->synthState->fullState.midiConfigValue[MIDICONFIG_GLOBAL]-1))) {
+    if (timbreIndex > 0) {
+        // MPE manager channel : the target was decided above, skip the ordinary match.
+    } else if (unlikely(midiEvent.channel == (this->synthState->fullState.midiConfigValue[MIDICONFIG_GLOBAL]-1))) {
         timbres[timbreIndex++] = 0;
         timbres[timbreIndex++] = 1;
         timbres[timbreIndex++] = 2;
@@ -330,6 +350,10 @@ int MidiDecoder::getMpeTimbre() {
     return instrument - 1;
 }
 
+bool MidiDecoder::isMpeManagerChannel(uint8_t channel) {
+    return channel == this->synthState->fullState.midiConfigValue[MIDICONFIG_MPE_MASTER];
+}
+
 // Lower zone shape : the master channel, then the member channels above it.
 bool MidiDecoder::isMpeMemberChannel(uint8_t channel) {
     int master = this->synthState->fullState.midiConfigValue[MIDICONFIG_MPE_MASTER];
@@ -349,6 +373,8 @@ void MidiDecoder::mpeForgetChannelState(uint8_t channel) {
     mpePressure[channel] = 0.0f;
     mpeSlide[channel] = 0.0f;
     mpeBend[channel] = 0.0f;
+    mpeRpnMsb[channel] = 0x7F;
+    mpeRpnLsb[channel] = 0x7F;
 }
 
 void MidiDecoder::mpeForgetAllChannelState() {
@@ -356,7 +382,73 @@ void MidiDecoder::mpeForgetAllChannelState() {
         mpePressure[c] = 0.0f;
         mpeSlide[c] = 0.0f;
         mpeBend[c] = 0.0f;
+        mpeRpnMsb[c] = 0x7F;
+        mpeRpnLsb[c] = 0x7F;
     }
+}
+
+// R2. The smallest RPN state machine the zone needs. Runs only while MPE is on, so
+// ordinary non MPE routing keeps its existing behaviour for these control changes.
+//
+// Returns true when the byte was part of an RPN sequence and must be swallowed. CC 6
+// and CC 38 are only swallowed while an RPN is actually selected on that channel;
+// otherwise they stay available to the nrpn data entry path and the editor protocol.
+bool MidiDecoder::mpeConsumeRpn(MidiEvent& midiEvent) {
+    uint8_t channel = midiEvent.channel;
+    if (unlikely(channel > 15)) {
+        return false;
+    }
+    switch (midiEvent.value[0]) {
+    case 101:
+        mpeRpnMsb[channel] = midiEvent.value[1];
+        return true;
+    case 100:
+        mpeRpnLsb[channel] = midiEvent.value[1];
+        return true;
+    case 6:
+    case 38:
+        break;
+    default:
+        return false;
+    }
+
+    // RPN Null, nothing is selected : these are ordinary data entry bytes.
+    if (mpeRpnMsb[channel] == 0x7F && mpeRpnLsb[channel] == 0x7F) {
+        return false;
+    }
+    // The data entry LSB carries cents for RPN 0 and nothing for RPN 6. It is consumed
+    // so it cannot reach the nrpn path, and otherwise ignored.
+    if (midiEvent.value[0] == 38) {
+        return true;
+    }
+    // Only the manager channel of the configured zone may change a setting. An RPN on
+    // any other channel - an upper zone configuration message on channel 16, for
+    // instance - is consumed and ignored, which is the whole point: it must not be
+    // able to edit the patch.
+    if (isMpeManagerChannel(channel)) {
+        if (mpeRpnMsb[channel] == 0) {
+            if (mpeRpnLsb[channel] == 0) {
+                // RPN 0 : pitch bend sensitivity, in semitones.
+                int semitones = midiEvent.value[1];
+                if (semitones > 48) {
+                    semitones = 48;
+                }
+                this->synthState->fullState.midiConfigValue[MIDICONFIG_MPE_BEND] = semitones;
+            } else if (mpeRpnLsb[channel] == 6) {
+                // RPN 6 : MPE configuration message, the member channel count.
+                int members = midiEvent.value[1];
+                // n == 0 means "deactivate the zone". It is consumed but deliberately
+                // not honoured: it would silently undo the user's MPE menu setting.
+                if (members >= 1) {
+                    if (members > 15) {
+                        members = 15;
+                    }
+                    this->synthState->fullState.midiConfigValue[MIDICONFIG_MPE_MEMBERS] = members;
+                }
+            }
+        }
+    }
+    return true;
 }
 
 void MidiDecoder::mpeEventReceived(int timbre, MidiEvent& midiEvent) {

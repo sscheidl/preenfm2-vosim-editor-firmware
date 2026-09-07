@@ -206,7 +206,9 @@ public:
     // MPE. Returns the timbre owning the zone, or -1 when MPE is off.
     int getMpeTimbre();
     bool isMpeMemberChannel(uint8_t channel);
+    bool isMpeManagerChannel(uint8_t channel);
     void mpeEventReceived(int timbre, MidiEvent& midiEvent);
+    bool mpeConsumeRpn(MidiEvent& midiEvent);
     void mpeForgetChannelState(uint8_t channel);
     void mpeForgetAllChannelState();
     void controlChange(int timbre, MidiEvent& midiEvent);
@@ -273,6 +275,10 @@ private:
     float mpePressure[16];
     float mpeSlide[16];
     float mpeBend[16];
+    // R2. Minimal RPN selection state per channel, only while MPE is on. 0x7F/0x7F is
+    // RPN Null, i.e. nothing selected.
+    uint8_t mpeRpnMsb[16];
+    uint8_t mpeRpnLsb[16];
     unsigned char runningStatus;
 
     // Midi Clock
