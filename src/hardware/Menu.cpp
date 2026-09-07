@@ -41,6 +41,11 @@ const char* oledSaver[] = { "Off", "2m", "5m", "10m", "1h" };
 const char* globalTuning[] = { "G" };
 const char* inst1[] = { "Off", "1", "2", "3", "4", "12", "123", "1234", "seq", "rand", "cv3"};
 
+// MPE : which timbre owns the zone, and where the zone starts.
+const char* mpeInstrument[] = { "Off", "1", "2", "3", "4" };
+const char* mpeMasterChannels[] = { "1", "2", "3", "4", "5", "6", "7", "8",
+                                    "9", "10", "11", "12", "13", "14", "15", "16" };
+
 const struct MidiConfig midiConfig[]  = {
 #ifdef CVIN
         {
@@ -205,6 +210,30 @@ const struct MidiConfig midiConfig[]  = {
                 "readsysex",
                 2,
                 noYes
+        },
+        {
+                "MPE inst: ",
+                "mpeinst",
+                5,
+                mpeInstrument
+        },
+        {
+                "MPE master: ",
+                "mpemaster",
+                16,
+                mpeMasterChannels
+        },
+        {
+                "MPE members: ",
+                "mpemembers",
+                16,
+                0
+        },
+        {
+                "MPE bend st: ",
+                "mpebend",
+                49,
+                0
         },
         // Don't count in MIDICONFIG_SIZE
         {

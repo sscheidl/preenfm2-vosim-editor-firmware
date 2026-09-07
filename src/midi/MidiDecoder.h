@@ -202,6 +202,13 @@ public:
     void newMessageType(unsigned char byte);
     void newMessageData(unsigned char byte);
     void midiEventReceived(MidiEvent midiEvent);
+
+    // MPE. Returns the timbre owning the zone, or -1 when MPE is off.
+    int getMpeTimbre();
+    bool isMpeMemberChannel(uint8_t channel);
+    void mpeEventReceived(int timbre, MidiEvent& midiEvent);
+    void mpeForgetChannelState(uint8_t channel);
+    void mpeForgetAllChannelState();
     void controlChange(int timbre, MidiEvent& midiEvent);
     void decodeNrpn(int timbre);
     void setSynth(Synth* synth);
@@ -259,6 +266,13 @@ private:
     // fires on a CC38 that followed a CC6, never on a stale or derived value.
     bool editorValueMsbSeen[NUMBER_OF_TIMBRES];
     bool omniOn[NUMBER_OF_TIMBRES];
+
+    // Expression a member channel last sent, 0.0f .. 1.0f for pressure and slide and
+    // -1.0f .. 1.0f for bend. MPE controllers may send expression just before the note
+    // on, so the value has to be remembered and applied when the note starts.
+    float mpePressure[16];
+    float mpeSlide[16];
+    float mpeBend[16];
     unsigned char runningStatus;
 
     // Midi Clock

@@ -755,6 +755,11 @@ SynthState::SynthState() {
     fullState.midiConfigValue[MIDICONFIG_TEST_NOTE] = 60;
     fullState.midiConfigValue[MIDICONFIG_TEST_VELOCITY] = 120;
     fullState.midiConfigValue[MIDICONFIG_ENCODER] = 0;
+    // MPE is off by default : nothing changes for anyone who does not switch it on.
+    fullState.midiConfigValue[MIDICONFIG_MPE_INST] = 0;
+    fullState.midiConfigValue[MIDICONFIG_MPE_MASTER] = 0;      // master channel 1
+    fullState.midiConfigValue[MIDICONFIG_MPE_MEMBERS] = 15;    // channels 2..16
+    fullState.midiConfigValue[MIDICONFIG_MPE_BEND] = 48;       // MPE default range
     fullState.midiConfigValue[MIDICONFIG_OP_OPTION] = 0;
     fullState.midiConfigValue[MIDICONFIG_LED_CLOCK] = 1;
     fullState.midiConfigValue[MIDICONFIG_ARPEGGIATOR_IN_PRESET] = 0;

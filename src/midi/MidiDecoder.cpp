@@ -51,6 +51,7 @@ MidiDecoder::MidiDecoder() {
     usbBufRead = usbBuf;
     usbBufWrite = usbBuf;
     sysexIndex = 0;
+    mpeForgetAllChannelState();
 
     for (int k=0; k<64; k++) {
         usbBuf[k] = 0;
@@ -208,6 +209,17 @@ void MidiDecoder::newMessageType(unsigned char byte) {
 void MidiDecoder::midiEventReceived(MidiEvent midiEvent) {
     int timbreIndex = 0;
     int timbres[4];
+
+    // MPE. A member channel of the zone belongs to the MPE timbre and never takes part
+    // in the ordinary channel routing below : not per timbre channels, not the global
+    // channel, not the current instrument channel, not omni. The master channel is
+    // deliberately left to the ordinary routing, which is exactly the zone wide
+    // behaviour MPE asks for (see docs/MPE_IMPLEMENTATION_REPORT.md).
+    int mpeTimbre = getMpeTimbre();
+    if (unlikely(mpeTimbre >= 0 && isMpeMemberChannel(midiEvent.channel))) {
+        mpeEventReceived(mpeTimbre, midiEvent);
+        return;
+    }
     // Just one test for global midi channel to optimize
     if (unlikely(midiEvent.channel == (this->synthState->fullState.midiConfigValue[MIDICONFIG_GLOBAL]-1))) {
         timbres[timbreIndex++] = 0;
@@ -302,6 +314,104 @@ void MidiDecoder::midiEventReceived(MidiEvent midiEvent) {
     case MIDI_SONG_POSITION:
         this->songPosition = ((int) midiEvent.value[1] << 7) + midiEvent.value[0];
         this->synth->midiClockSetSongPosition(this->songPosition);
+        break;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// MPE
+// ---------------------------------------------------------------------------
+
+int MidiDecoder::getMpeTimbre() {
+    int instrument = this->synthState->fullState.midiConfigValue[MIDICONFIG_MPE_INST];
+    if (likely(instrument == 0)) {
+        return -1;
+    }
+    return instrument - 1;
+}
+
+// Lower zone shape : the master channel, then the member channels above it.
+bool MidiDecoder::isMpeMemberChannel(uint8_t channel) {
+    int master = this->synthState->fullState.midiConfigValue[MIDICONFIG_MPE_MASTER];
+    int members = this->synthState->fullState.midiConfigValue[MIDICONFIG_MPE_MEMBERS];
+    if (members < 1) {
+        members = 1;
+    } else if (members > 15) {
+        members = 15;
+    }
+    return channel > master && channel <= (master + members) && channel <= 15;
+}
+
+void MidiDecoder::mpeForgetChannelState(uint8_t channel) {
+    if (unlikely(channel > 15)) {
+        return;
+    }
+    mpePressure[channel] = 0.0f;
+    mpeSlide[channel] = 0.0f;
+    mpeBend[channel] = 0.0f;
+}
+
+void MidiDecoder::mpeForgetAllChannelState() {
+    for (int c = 0; c < 16; c++) {
+        mpePressure[c] = 0.0f;
+        mpeSlide[c] = 0.0f;
+        mpeBend[c] = 0.0f;
+    }
+}
+
+void MidiDecoder::mpeEventReceived(int timbre, MidiEvent& midiEvent) {
+    Timbre* mpeTimbre = this->synth->getTimbre(timbre);
+    uint8_t channel = midiEvent.channel;
+    int bendRange = this->synthState->fullState.midiConfigValue[MIDICONFIG_MPE_BEND];
+
+    switch (midiEvent.eventType) {
+    case MIDI_NOTE_OFF:
+        mpeTimbre->mpeNoteOff(channel, midiEvent.value[0]);
+        // The note is over, so the expression that belonged to it must not leak into
+        // whatever this member channel plays next.
+        mpeForgetChannelState(channel);
+        break;
+    case MIDI_NOTE_ON:
+        if (midiEvent.value[1] == 0) {
+            mpeTimbre->mpeNoteOff(channel, midiEvent.value[0]);
+            mpeForgetChannelState(channel);
+        } else {
+            mpeTimbre->mpeNoteOn(channel, midiEvent.value[0], midiEvent.value[1]);
+            visualInfo->noteOn(timbre, true);
+            // Expression the controller sent just before the note on belongs to this
+            // note. mpeNoteOn() has just restored the timbre baseline on that voice,
+            // so these three writes come after it on purpose.
+            mpeTimbre->mpeSetMatrixSource(channel, MATRIX_SOURCE_AFTERTOUCH, mpePressure[channel]);
+            mpeTimbre->mpeSetMatrixSource(channel, MATRIX_SOURCE_MPESLIDE, mpeSlide[channel]);
+            mpeTimbre->mpeSetPitchBend(channel, mpeBend[channel], bendRange);
+        }
+        break;
+    case MIDI_AFTER_TOUCH:
+        // Press. Same pressure dimension as channel and polyphonic pressure, but
+        // written only to the voice this member channel owns. It must not touch the
+        // timbre wide baseline lastChannelAfterTouch_.
+        mpePressure[channel] = INV127 * midiEvent.value[0];
+        mpeTimbre->mpeSetMatrixSource(channel, MATRIX_SOURCE_AFTERTOUCH, mpePressure[channel]);
+        break;
+    case MIDI_PITCH_BEND: {
+        // Glide.
+        int pb = ((int) midiEvent.value[1] << 7) + (int) midiEvent.value[0] - 8192;
+        mpeBend[channel] = (float) pb * .00012207031250000000f;
+        mpeTimbre->mpeSetPitchBend(channel, mpeBend[channel], bendRange);
+        break;
+    }
+    case MIDI_CONTROL_CHANGE:
+        // Slide, and nothing else. Every other control change is ignored on a member
+        // channel on purpose : the ordinary controlChange() path maps many CC numbers
+        // to synth parameters, and a member channel must never edit the patch.
+        if (midiEvent.value[0] == CC_MPE_SLIDE_CC74) {
+            mpeSlide[channel] = INV127 * midiEvent.value[1];
+            mpeTimbre->mpeSetMatrixSource(channel, MATRIX_SOURCE_MPESLIDE, mpeSlide[channel]);
+        }
+        break;
+    default:
+        // Polyphonic key pressure, program change and everything else are not MPE
+        // member channel messages and are ignored here.
         break;
     }
 }

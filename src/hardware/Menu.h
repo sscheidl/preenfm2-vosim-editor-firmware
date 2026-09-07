@@ -53,6 +53,13 @@ enum {
     MIDICONFIG_UNLINKED_EDITING,
     MIDICONFIG_BOOT_SOUND,
     MIDICONFIG_SYSEX,
+    // MPE. Appended at the end on purpose: the configuration file is keyed by name
+    // (ConfigurationFile::fillMidiConfig compares midiConfig[k].nameInFile), so an
+    // older preenfm2.txt simply does not carry these keys and they keep their default.
+    MIDICONFIG_MPE_INST,
+    MIDICONFIG_MPE_MASTER,
+    MIDICONFIG_MPE_MEMBERS,
+    MIDICONFIG_MPE_BEND,
     MIDICONFIG_SIZE
 };
 
