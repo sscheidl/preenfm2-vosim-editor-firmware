@@ -521,8 +521,11 @@ def main():
     parser.add_argument("--master", type=int, default=1, metavar="N",
                         help="MPE master channel 1..16 (default 1)")
     parser.add_argument("--bend", type=int, default=48, metavar="ST",
-                        help="member pitch bend range in semitones; must match the "
-                             "PreenFM2 'MPE bend st' setting (default 48)")
+                        help="member pitch bend range in semitones, 1..48; must match "
+                             "the PreenFM2 'MPE bend st' setting (default 48). The "
+                             "firmware clamps a member range to 48 because the pitch "
+                             "path saturates above it, so sending more is not a test "
+                             "of anything")
     parser.add_argument("--hold", type=float, default=0.6, metavar="S")
     parser.add_argument("--step", type=float, default=0.5, metavar="S")
     parser.add_argument("--gap", type=float, default=0.2, metavar="S")
@@ -543,8 +546,10 @@ def main():
     if not 1 <= options.master <= 16:
         print("--master must be 1..16")
         return 2
-    if not 1 <= options.bend <= 96:
-        print("--bend must be 1..96 semitones")
+    if not 1 <= options.bend <= 48:
+        print("--bend must be 1..48 semitones: the firmware clamps a member range to "
+              "48 (MPE_MEMBER_BEND_MAX), because the per voice frequency path cannot "
+              "render more. See docs/MPE_IMPLEMENTATION_REPORT.md section 21.")
         return 2
     if options.sweep_steps < 1 or options.steal_notes < 1:
         print("--sweep-steps and --steal-notes must be >= 1")

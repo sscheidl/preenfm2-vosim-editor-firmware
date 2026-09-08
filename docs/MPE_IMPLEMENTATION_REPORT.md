@@ -5,9 +5,14 @@ PreenFM2 firmware 3.00 alpha, branch `feature/full-mpe`.
 **ARCHITECTURE GATE: PASS** — a coherent zone/timbre mapping is derivable from the
 existing PreenFM2 routing; §3 gives the derivation. Implementation followed.
 
-**Two rounds of independent review raised seven correctness findings, R1–R7. All seven
-are CONFIRMED and fixed; §19 and §20 record them and the two second-order defects they
-exposed.** Claims that the fixes invalidated have been corrected in place.
+**Three rounds of independent review raised eight correctness findings, R1–R8. All eight
+are CONFIRMED and fixed; §19, §20 and §21 record them and the two second-order defects
+they exposed.** Claims that the fixes invalidated have been corrected in place.
+
+**The supported member pitch bend range on this branch is 0..48 semitones**, and a value
+above 48 is clamped. MPE 1.1 allows up to 96, but the current per-voice frequency
+representation saturates above 48 — §21 has the arithmetic, §17 limitation 3 the
+contract.
 
 **This is not "full MPE".** Upper Zone is not implemented, RPN 6 with a member count of
 zero is not honoured, and the manager pitch bend range cannot be applied. §17 lists the
@@ -95,7 +100,7 @@ Four settings appended at the end of the midi configuration enum:
 | `MPE inst:` | `mpeinst` | Off / 1 / 2 / 3 / 4 | **Off** |
 | `MPE master:` | `mpemaster` | 1..16 | 1 |
 | `MPE members:` | `mpemembers` | count above the master, clamped 1..15 | 15 |
-| `MPE bend st:` | `mpebend` | 0..96 semitones, the **member** default | 48 |
+| `MPE bend st:` | `mpebend` | 0..48 semitones, the **member** default (menu maximum is 48; R8) | 48 |
 
 Appending is safe because `preenfm2.txt` is **keyed by name**, not by index:
 `ConfigurationFile::saveConfig()` writes `nameInFile=value` and `fillMidiConfig()`
@@ -163,7 +168,7 @@ meaning for CC 100/101/6/38.
 
 | RPN | manager channel | member channel | outside the zone |
 |---|---|---|---|
-| 0 — pitch bend sensitivity | sets the **manager** range (recorded, see §8) | sets **that member channel's** range, 0..96 semitones | not intercepted |
+| 0 — pitch bend sensitivity | sets the **manager** range, 0..96, recorded only (see §8) | sets **that member channel's** range, **0..48**, larger values clamped (§21) | not intercepted |
 | 6 — MPE Configuration Message | sets `MPE members` (1..15), resynchronises the zone and restores the MPE 1.1 defaults: manager 2, every member 48 | ignored — only the manager may resize the zone | not intercepted |
 | anything else | consumed, ignored | consumed, ignored | not intercepted |
 
@@ -229,6 +234,13 @@ to the manager channel sets the manager range, RPN 0 addressed to a member chann
 member 48. The menu `MPE bend st` seeds the member ranges until a controller negotiates
 its own. Finding **R5** (§20) showed that a single shared value let a manager RPN 0 of 2
 semitones become the member Glide range.
+
+**A member range is clamped to 48 semitones** (`MPE_MEMBER_BEND_MAX`). A full bend
+becomes `bend * range * 0.5f` freqHarm units, and the bounds fix below caps the
+`exp2_harm` index at 1022, i.e. 25.5 freqHarm units — so 48 semitones (24.0 units,
+index 992) renders exactly, while the 96 that MPE 1.1 permits would ask for index 1472
+and saturate. Finding **R8** (§21) is the whole story; the manager entry keeps the
+full 0..96 because nothing reads it as semitones.
 
 **The manager range is recorded but not applied.** Manager pitch bend goes through
 `MATRIX_SOURCE_PITCHBEND`, whose range is the preset's matrix row multiplier, so this
@@ -336,7 +348,7 @@ Correctness pass (§19), on top of the above:
 | `src/synth/Timbre.h` / `.cpp` | `lastSlide_` + `setMatrixSlide()` and its restore |
 | `src/synth/Voice.h` | `afterNewParamsLoad()` clears `mpeFreqOffset` |
 
-Firmware total **+400 / −16** against the PolyAT base. Not touched: `Common.h`,
+Firmware total **+414 / −16** against the PolyAT base. Not touched: `Common.h`,
 `Presets.cpp`, `Matrix.*`, `filesystem/**`, `utils/**`, the editor protocol, the
 Makefile, the linker scripts.
 
@@ -351,6 +363,8 @@ Makefile, the linker scripts.
 | 5 | `ee5bb1e` | Review R3 and R4: member expression validity and lifecycle resets |
 | 6 | `d2c73fb` | R1–R4 regression tests and report update |
 | 7 | `9682f55` | Review R5, R6 and R7: MPE 1.1 bend sensitivity, RPN scope and zone resize |
+| 8 | `9236892` | R5–R7 regression tests and report corrections |
+| 9 | this commit | Review R8: a member bend range must be one the pitch path can render |
 | 8 | branch HEAD | R5–R7 regression tests and report update |
 
 Commits 1–6 were reviewed and are **not** rewritten.
@@ -364,7 +378,7 @@ The reviewed PolyAT history was not rewritten.
 
 ## 15. Host tests
 
-`test/host/mpe_state_test.py` — **290 checks in 21 scenarios, all pass.**
+`test/host/mpe_state_test.py` — **325 checks in 22 scenarios, all pass.**
 
 It **does not execute firmware code.** It is (1) structural assertions read from the
 real sources and (2) a **simulation** — a transcription of the C++ control flow. It
@@ -390,12 +404,13 @@ cannot catch a compiler, timing, interrupt-ordering or hardware problem.
 | **R2** | RPN 6 sets the member count and RPN 0 the bend range; no arp CC, no NRPN data entry, no ordinary message switch is reached; after RPN Null CC 6/38 go back to the NRPN path; an upper-zone MCM on ch16 that falls *inside* the configured lower zone is consumed without resizing it (outside the zone is R6's documented limitation);  with MPE off CC 100/101/6/38 keep their ordinary meanings | pass |
 | **R3** | manager pressure 70 and slide 90, member note on with nothing sent: the voice keeps 70 and 90; an explicit member 0 then overrides both | pass |
 | **R4** | CC 123 / CC 120 / CC 127 / parameter load / MPE off-and-on / moving the zone all leave no stale pressure, slide, bend, seen flag or ownership; `mpeFreqOffset` is 0 after a parameter load | pass |
-| **R5** | the exact sequence asked for: manager RPN 0 = 2, then member RPN 0 = 48 → member Glide uses **48** (24.0 freqHarm units), not 2 (which would be 1.0); each member channel keeps its own range; an MCM restores 2 / 48; 96 semitones is accepted | pass |
+| **R5** | the exact sequence asked for: manager RPN 0 = 2, then member RPN 0 = 48 → member Glide uses **48** (24.0 freqHarm units), not 2 (which would be 1.0); each member channel keeps its own range; an MCM restores 2 / 48; the manager keeps the full 0..96 spec range | pass |
 | **R6** | the exact sequence asked for: lower zone manager 1 with 4 members, ordinary timbre on channel 10, CC 100/101 there → they keep their ordinary meaning, the channel never enters the MPE RPN state, CC 6/38 still reach the NRPN path, and RPN inside the zone is still consumed | pass |
 | **R7** | the exact sequence asked for: 15 members, expression on channel 16, shrink to 4, expand to 15, new channel-16 note → no old pressure, slide, bend or ownership returns; the same through RPN 6; a bend-setting change also resynchronises | pass |
+| **R8** | the eight cases asked for: member RPN 0 = 48 stores 48 and renders ±24.0 freqHarm units with the `exp2_harm` index inside 0..1022 at both extremes; 96 clamps to 48 and still renders ±24.0, never 48.0; 49 clamps; 12 stays 12 and renders ±6.0; the manager keeps 0..96 bookkeeping and cannot change a member range; an MCM still restores 2 / 48 and that default renders; a hand-edited `mpebend = 96` cannot seed an unrenderable member range; ordinary non-MPE pitch bend still reaches `MATRIX_SOURCE_PITCHBEND` unclamped | pass |
 
 Assertions were verified **non-vacuous** by reintroducing each defect and watching the
-matching check fail — seven in total, none committed:
+matching check fail — fifteen in total, none committed:
 
 | defect reintroduced | assertion that fired |
 |---|---|
@@ -410,6 +425,10 @@ matching check fail — seven in total, none committed:
 | the R6 zone gate removed | R6: RPN is consumed on channels outside the configured zone |
 | member count dropped from the change detection | R7: the member count and bend setting are not part of the change detection |
 | RPN selection cleared on reset again | R4: a reset clears the RPN selection, which breaks a configuration message mid sequence |
+| the RPN 0 member clamp removed | R8: RPN 0 does not clamp a member bend range before storing it — and behaviourally: 96 stored, `exp2_harm` index 1472 and −448, both outside 0..1022 |
+| the seed clamp put back to the spec maximum | R8: the menu / config file seed is still bounded by the spec maximum — and a hand-edited `mpebend = 96` seeding index 1472 |
+| the clamp applied to the manager channel too | R8: the manager range must keep the full 0..96 spec range |
+| the clamp reached into the ordinary pitch bend path | R8: the member clamp reached the ordinary pitch bend path |
 
 `polyat_state_test.py` (79 checks) and `protocol_sim_test.py` (115 checks) both still
 pass unchanged.
@@ -427,7 +446,7 @@ Shims (command line only, no source/Makefile/linker-script change): `-std=gnu++9
 `-include sys/types.h`, a linker-script copy with `SIZEOF(.jcr)` → `0`, `LFLAGS`
 `-gc-sections` → `-g`. Clean (`rm -rf build/*`) before every target.
 
-Figures below are the **corrected** branch HEAD, after R1–R4.
+Figures below are the **corrected** branch HEAD, after R1–R8.
 
 | target | result | `.bin` | `.text` | `.data` | `.bss` | warnings |
 |---|---|---|---|---|---|---|
@@ -436,8 +455,8 @@ Figures below are the **corrected** branch HEAD, after R1–R4.
 | `pfmcv` | **PASS** | 364 048 | 309 144 | 54 904 | 101 716 | 103 |
 | `pfmcvo` | **PASS** | 364 048 | 309 144 | 54 904 | 101 716 | 103 |
 
-`pfm`/`pfmo` byte-identical (md5 `5cb2740a…`), `pfmcv`/`pfmcvo` byte-identical
-(md5 `9803025c…`).
+`pfm`/`pfmo` byte-identical (md5 `63cda327…`), `pfmcv`/`pfmcvo` byte-identical
+(md5 `6f6f7107…`).
 
 Step by step, so each correctness round is attributable:
 
@@ -445,9 +464,15 @@ Step by step, so each correctness round is attributable:
 |---|---|---|---|---|
 | `115d0f2` first MPE | 359 104 | `0x10678` | `0x851c` | — |
 | `d2c73fb` R1–R4 | 360 384 | `0x106c0` | `0x852c` | +72 `.bss` (seen flags 32, RPN state 32, config detection 8), +16 CCM (`lastSlide_` × 4) |
-| branch HEAD R5–R7 | 361 152 | `0x106d8` | `0x852c` | +24 `.bss` (`mpeBendRange[16]` = 16, `mpeLastMembers` + `mpeLastBend` = 8) |
+| `9236892` R5–R7 | 361 152 | `0x106d8` | `0x852c` | +24 `.bss` (`mpeBendRange[16]` = 16, `mpeLastMembers` + `mpeLastBend` = 8) |
+| branch HEAD R8 | 361 152 | `0x106d8` | `0x852c` | **nothing** — no new state |
 
-Every byte is accounted for; `.data` and CCMRAM are unchanged by the R5–R7 round.
+Every byte is accounted for. R8 adds **no** RAM at all: it is a comparison and an
+assignment inside `mpeConsumeRpn()`, which grew from `0x334` to `0x344` — **+16 bytes of
+code**, absorbed by the existing 64-byte alignment padding at the end of `.text`, so
+every section header and both `.bin` sizes are byte-for-byte unchanged against `9236892`.
+The binaries themselves do differ (new md5s above); the disassembly of `mpeConsumeRpn`
+gains exactly seven instructions.
 
 ### Delta against the PolyAT base
 
@@ -487,7 +512,7 @@ These are the reasons the header does not call this "full MPE".
 1. **Upper Zone is not implemented** (§3). The shape is lower-zone only: manager channel
    plus ascending member channels. An MPE Configuration Message addressed to the Upper
    Zone manager (channel 16) is **not** intercepted unless channel 16 happens to be
-   inside the configured Lower Zone — see limitation 4.
+   inside the configured Lower Zone — see limitation 5.
 2. **RPN 6 with a member count of `n = 0` is consumed but not honoured.** MPE 1.1 defines
    `n = 0` as *deactivate the zone*: the manager channel reverts to an ordinary MIDI
    channel and every member channel is released. This implementation clamps the count to
@@ -502,14 +527,27 @@ These are the reasons the header does not call this "full MPE".
    introduce a second, decoder-local "active" flag that the menu does not know about and
    that nothing in the UI could show. Both were judged larger and riskier than the
    remaining benefit, so the limitation is documented rather than papered over.
-3. **The manager pitch bend range is recorded but never applied** (§8). RPN 0 on the
-   manager channel stores `mpeBendRange[manager]` and MPE 1.1's default of 2 semitones is
-   seeded there, but manager-channel pitch bend still runs the firmware's existing path:
-   `MATRIX_SOURCE_PITCHBEND`, whose range is the preset's matrix row multiplier, not a
-   semitone setting. There is therefore no manager bend range in this firmware to set.
-   Only member-channel bend uses `mpeBendRange[]`. This keeps ordinary pitch bend
-   byte-for-byte unchanged, at the cost of the manager range being informational.
-4. **RPN outside the configured zone is not swallowed** (finding **R6**, §20). CC
+3. **The member pitch bend range is 0..48 semitones, not the 0..96 MPE 1.1 allows**
+   (finding **R8**, §21). A member value above 48 is clamped
+   (`MPE_MEMBER_BEND_MAX`, `MidiDecoder.h`). This is a **representation limit in the
+   current firmware, not a hardware mystery**: `mpeSetPitchBend()` turns a full bend into
+   `bend * range * 0.5f` freqHarm units and `Voice::nextBlock()` reads `exp2_harm` at
+   `512 + freqHarm * 20` over a usable 0..1022, so the largest renderable offset is 25.5
+   units — 51 semitones. 48 renders exactly (index 992); 96 would need index 1472 and
+   saturate. Rather than store a range the audio path cannot produce, the firmware clamps
+   and says so. 48 is also the MPE 1.1 default and the normal ROLI range, so no ordinary
+   controller is affected. Raising it would mean enlarging `exp2_harm` or adding a second
+   pitch representation — deliberately out of scope for this branch.
+4. **The manager pitch bend range is recorded but never applied** (§8). RPN 0 on the
+   manager channel stores `mpeBendRange[manager]` over the full 0..96 spec range and
+   MPE 1.1's default of 2 semitones is seeded there, but manager-channel pitch bend still
+   runs the firmware's existing path: `MATRIX_SOURCE_PITCHBEND`, whose range is the
+   preset's matrix row multiplier, not a semitone setting. There is therefore no manager
+   bend range in this firmware to set. Only member-channel bend uses `mpeBendRange[]`,
+   which is also why the R8 clamp is *not* applied to the manager entry: it is
+   bookkeeping, nothing renders it. This keeps ordinary pitch bend byte-for-byte
+   unchanged, at the cost of the manager range being informational.
+5. **RPN outside the configured zone is not swallowed** (finding **R6**, §20). CC
    100/101/6/38 are intercepted **only** on the manager and member channels of the
    configured Lower Zone. Outside it they keep their existing PreenFM2 meanings
    (`CC_ARP_CLOCK`, `CC_ARP_DIRECTION`, NRPN data entry). An earlier draft of this report
@@ -518,31 +556,32 @@ These are the reasons the header does not call this "full MPE".
    had not given to MPE. The narrower rule is the correct trade, and the honest statement
    of it is: **an RPN sent outside the zone can still reach the arpeggiator or the NRPN
    state machine, exactly as it did before this branch.**
-5. **Lift / note-off velocity is not implemented.** Audited as §1 of the assignment
+6. **Lift / note-off velocity is not implemented.** Audited as §1 of the assignment
    asked: `Voice::noteOff()` takes no velocity and the six envelopes have no release
    velocity input, so there is no existing parameter for it to reach. Adding one would
    mean new envelope state and a new matrix source. Not added to claim spec coverage.
 
 **Implementation limitations**
 
-6. **Unison + MPE is not a supported combination.** In unison `preenNoteOn()` starts the
+7. **Unison + MPE is not a supported combination.** In unison `preenNoteOn()` starts the
    whole stack but reports one voice, so only that voice would follow member expression.
    Use the MPE timbre in ordinary polyphonic mode.
-7. **Arpeggiator + MPE is not meaningful** — the arpeggiator transposes notes
+8. **Arpeggiator + MPE is not meaningful** — the arpeggiator transposes notes
    (`Timbre.cpp:5330`) and the member channel association is made at note on.
-8. **Member polyphony is the MPE timbre's voice count**, up to 14; a controller sending
+9. **Member polyphony is the MPE timbre's voice count**, up to 14; a controller sending
    15 member channels will steal voices.
-9. **A timbre configured inside the zone is shadowed** while MPE is on (§3) — intended,
+10. **A timbre configured inside the zone is shadowed** while MPE is on (§3) — intended,
    but it will look like a dead timbre if a user forgets.
-10. **Builds are not release-valid** (§16) and **no hardware validation was performed**.
+11. **Builds are not release-valid** (§16) and **no hardware validation was performed**.
 
 ## 18. Hardware test plan — LUMI and Seaboard RISE
 
 Prerequisite for both: `tools/midi_monitor.py --port <controller> --summary`, then press
 and slide a key. Confirm you see `polytouch`/`aftertouch` per member channel, `pitchwheel`
 per member channel and `control_change 74`, and note which channels are in use. Set the
-PreenFM2 `MPE master:` and `MPE bend st:` to match the controller; set `MPE inst:` to the
-timbre you will play. A patch routing `AftT`, `CC74` and — for reference — `PitB` is
+PreenFM2 `MPE master:` to match the controller and **`MPE bend st:` to 48**, which is
+both the MPE default and the largest range this firmware renders (§21); set `MPE inst:`
+to the timbre you will play. A patch routing `AftT`, `CC74` and — for reference — `PitB` is
 needed to hear anything.
 
 **ROLI LUMI — quick smoke test**
@@ -676,12 +715,14 @@ range. So the exact sequence the review named reproduced:
 | 3 | member ch 2 bend | 48 st — right by luck | 48 st |
 | 3′ | steps 1 and 2 swapped | **2 st** — Glide reduced to a semitone-ish wobble | 48 st |
 
-The old code also clamped RPN 0 to 48, while MPE 1.1 allows 0..96, and it accepted RPN 0
-**only on the manager channel** — a member channel negotiating its own range was
-consumed and dropped.
+The old code also accepted RPN 0 **only on the manager channel** — a member channel
+negotiating its own range was consumed and dropped. It clamped at 48; the R5 fix widened
+that to the 0..96 MPE 1.1 allows, which **finding R8 then showed was wrong for member
+channels** and narrowed back to 48. §21 has the arithmetic; the manager entry keeps
+0..96.
 
 Fixed with `uint8_t mpeBendRange[16]`, one entry per channel. RPN 0 writes only the
-channel it arrived on, over the full 0..96 range. `mpeEventReceived()` reads
+channel it arrived on. `mpeEventReceived()` reads
 `mpeBendRange[channel]`, so a member note bends by *its own* channel's range. An MPE
 Configuration Message restores the MPE 1.1 defaults: manager 2, every member channel 48.
 The `MPE bend st` menu setting seeds the member ranges until a controller negotiates.
@@ -690,7 +731,7 @@ The `MPE bend st` menu setting seeds the member ranges until a controller negoti
 requirement.
 
 The manager range is now recorded rather than applied, because this firmware has no
-manager bend range to apply (§17 limitation 3). Recorded and stated, not faked.
+manager bend range to apply (§17 limitation 4). Recorded and stated, not faked.
 
 ### R6 — RPN was intercepted on every channel — **CONFIRMED + FIXED**
 
@@ -705,7 +746,7 @@ Fixed by gating the call: `isMpeManagerChannel(channel) || isMpeMemberChannel(ch
 channel 16 is *no longer* consumed unless channel 16 is inside the configured Lower Zone.
 §19's earlier claim that it was "consumed harmlessly" was only true at the price of
 hijacking channels outside the zone. That trade is not worth making, so the claim is
-withdrawn and replaced by §17 limitation 4, which says plainly that an RPN outside the
+withdrawn and replaced by §17 limitation 5, which says plainly that an RPN outside the
 zone reaches the same places it reached before this branch.
 
 ### R7 — a member-count change was not treated as a zone change — **CONFIRMED + FIXED**
@@ -748,23 +789,105 @@ it to clear the timbres' ownership, and it can now run before `setSynth()` — t
 link, not a guarantee. Explicitly null-initialised in the constructor, with a
 `likely(this->synth != 0)` guard at the call site.
 
+## 21. Independent re-review finding R8
+
+One residual issue, verified against the real source before any change. **CONFIRMED.**
+
+### R8 — a member bend range larger than the frequency path can render — **CONFIRMED + FIXED**
+
+The R5 fix widened member RPN 0 to the 0..96 that MPE 1.1 allows. It should not have:
+96 semitones is a number this firmware can *store* but not *play*.
+
+**The arithmetic, end to end.**
+
+| step | source | value at range 48 | value at range 96 |
+|---|---|---|---|
+| MIDI pitch bend, full positive | `MidiDecoder.cpp:598` | `pb = +8191` | `pb = +8191` |
+| normalised | `pb * .0001220703125f` | ≈ `+1.0` | ≈ `+1.0` |
+| freqHarm offset | `Timbre::mpeSetPitchBend()`, `bend * range * 0.5f` | `+24.0` | `+48.0` |
+| `exp2_harm` index | `Voice::nextBlock()`, `512 + freqHarm * 20` | **992** | **1472** |
+| after the 0..1022 clamp | `Voice.cpp:333-337` | 992, untouched | **1022** |
+| what is actually heard | | +48 semitones | ≈ **+51**, not +96 |
+
+The negative extreme mirrors it: `pb = -8192` is exactly `-1.0`, so range 96 asks for
+index **−448** and the clamp returns 0, ≈ −51.2 semitones.
+
+`ALL_OSC_FREQ_HARM` is 2 semitones per unit, and `exp2_harm` holds 1024 entries read with
+interpolation at `index + 1`, so the usable index range is 0..1022 — 25.5 units either
+side of centre, i.e. **51 semitones**. That is the hard ceiling of the current pitch
+representation. 48 fits with room to spare; 96 does not fit at all.
+
+So the firmware stored a range it could not reproduce, reported it back as the
+negotiated value, and silently saturated. The existing host test only checked that the
+number 96 could be *stored* — it never followed the number through to a pitch. That gap
+is exactly what R8 names, and closing it is the point of scenario R8's eight cases.
+
+**The fix.** `MPE_MEMBER_BEND_MAX 48` in `MidiDecoder.h`, carrying the derivation as a
+comment, and three uses:
+
+| site | behaviour |
+|---|---|
+| `mpeConsumeRpn()`, RPN 0 | a **member** channel clamps to 48; the **manager** keeps the full 0..96 (bookkeeping only, §17 limitation 4) |
+| `mpeResetBendRanges()` | the `MPE bend st` seed is bounded by 48, not 96 |
+| MCM restore + constructor | the MPE 1.1 member default of 48 now names the constant |
+
+The menu already stops at 48 (`Menu.cpp`, `maxValue` 49 for `mpebend`), but
+`ConfigurationFile::fillMidiConfig()` writes `midiConfigValue[]` from `preenfm2.txt`
+**with no bounds check at all** (`ConfigurationFile.cpp:151`) — that is pre-existing for
+every setting — so a hand-edited `mpebend = 96` would otherwise reach the seed. Clamping
+in `mpeResetBendRanges()` closes that route too, and scenario R8-G tests it.
+
+`tools/mpe_test.py` follows the contract: `--bend` is validated against 1..48 and its
+help says why, so a hardware session cannot be run against a range the firmware will
+clamp underneath it.
+
+**Not done, deliberately, per the assignment:** `exp2_harm` is unchanged, the oscillator
+pitch path is unchanged, and no second pitch representation was introduced. Real ±96
+support would need one of those and is not smuggled in here.
+
+**Ordinary pitch bend is untouched.** The clamp lives in `mpeConsumeRpn()` and
+`mpeResetBendRanges()` only. Non-MPE pitch bend still goes
+`setMatrixSource(MATRIX_SOURCE_PITCHBEND, pb / 8192.0f)` with no semitone range anywhere
+on that path — the matrix row multiplier is its range. Scenario R8-H asserts it
+behaviourally at both extremes, and a structural check asserts that neither
+`MPE_MEMBER_BEND_MAX` nor `mpeBendRange` appears in that code path.
+
+### Effective contract after R8
+
+| | supported | clamped | rendered |
+|---|---|---|---|
+| member RPN 0 | 0..48 semitones | > 48 → 48 | exactly, `exp2_harm` index 32..992 |
+| manager RPN 0 | 0..96 semitones | > 96 → 96 | never — bookkeeping only |
+| `MPE bend st` menu | 0..48 | menu maximum is 48 | seeds the member channels |
+| MCM (RPN 6) | — | — | restores manager 2, members 48 |
+
 ---
 
-**MPE CORRECTNESS GATE: PASS FOR INDEPENDENT RE-REVIEW**
+**LOWER-ZONE MPE / ROLI ±48 GATE: PASS FOR HARDWARE VALIDATION**
 
-Seven findings over two review rounds — R1–R4 (§19) and R5–R7 (§20) — all CONFIRMED
-against the real source and all fixed, plus the three second-order defects they exposed
-(the missing slide baseline, the RPN selection cleared mid-message, and the uninitialised
-`synth` pointer). Verified in the cloud: 290 checks over 21 scenarios in
-`test/host/mpe_state_test.py`, 79 in `polyat_state_test.py` and 115 in
+Eight findings over three review rounds — R1–R4 (§19), R5–R7 (§20) and R8 (§21) — all
+CONFIRMED against the real source and all fixed, plus the three second-order defects they
+exposed (the missing slide baseline, the RPN selection cleared mid-message, and the
+uninitialised `synth` pointer). Verified in the cloud: **325 checks over 22 scenarios**
+in `test/host/mpe_state_test.py`, 79 in `polyat_state_test.py` and 115 in
 `protocol_sim_test.py`, all four targets (`pfm`, `pfmo`, `pfmcv`, `pfmcvo`) building
-clean, **zero new warnings** and an exactly accounted `.bss` delta of +24 bytes, with the
-structural constraints holding — no matrix source added, no preset format change, the
-PolyAT contract and the editor remote protocol byte-identical.
+clean, **zero new warnings**, **zero RAM delta** for R8, and the structural constraints
+holding — no matrix source added, no preset format change, `exp2_harm` unchanged, the
+PolyAT contract and the editor remote protocol byte-identical. Fifteen assertions were
+proved non-vacuous by reintroducing the defect each one guards.
 
-**This is not "full MPE", and the report does not claim it is.** The standards
-limitations are §17, items 1–5: no Upper Zone; RPN 6 `n = 0` consumed but not honoured;
-the manager pitch bend range recorded but not applicable; RPN outside the configured zone
-deliberately not intercepted; no Lift. Unison and the arpeggiator remain unsupported
-combinations. The four builds used a **substitute toolchain (GCC 13.2) and are not
-release-valid**, and **no hardware validation was performed** — §18 is the plan for it.
+**The branch now states a bend contract it can actually keep: member 0..48 semitones.**
+That is the MPE 1.1 default and the ROLI working range, so set `MPE bend st: 48` for the
+LUMI and Seaboard RISE sessions in §18.
+
+**This is still not "full MPE", and the report does not claim it is.** The standards
+limitations are §17, items 1–6: no Upper Zone; RPN 6 `n = 0` consumed but not honoured;
+the member range capped at 48 where the spec allows 96; the manager pitch bend range
+recorded but not applicable; RPN outside the configured zone deliberately not
+intercepted; no Lift. Unison and the arpeggiator remain unsupported combinations.
+
+**Still open, and the reason this gate says "for hardware validation" rather than
+"done":** the four builds used a **substitute toolchain (GCC 13.2) and are not
+release-valid or flash candidates**. Rebuild with GCC 4.7.4 per
+`docs/POLYAT_HARDWARE_TEST_CHECKLIST.md` §1 before flashing anything, and **no hardware
+validation has been performed** — §18 is the plan for it.

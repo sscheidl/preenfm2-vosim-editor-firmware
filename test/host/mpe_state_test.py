@@ -284,10 +284,35 @@ def test_review_findings_r1_to_r4():
           "R5: RPN 0 still writes the single shared bend setting, so a manager RPN 0 "
           "would become the member Glide range")
     check("96" in rpn, "R5: the RPN 0 range is not the 0..96 semitones MPE 1.1 allows")
-    check("mpeBendRange[c] = 48" in rpn and "mpeBendRange[channel] = 2" in rpn,
+    check("mpeBendRange[c] = MPE_MEMBER_BEND_MAX" in rpn
+          and "mpeBendRange[channel] = 2" in rpn,
           "R5: an MPE configuration message does not restore the 2/48 defaults")
     check("int bendRange = mpeBendRange[channel];" in decoder,
           "R5: a member note does not use its own channel's bend range")
+
+    # --- R8: a member bend range must be one the frequency path can render ---
+    check("#define MPE_MEMBER_BEND_MAX 48" in decoder_h,
+          "R8: the renderable member bend limit is not defined in the header")
+    rpn_code = code_only(rpn)
+    before_store = rpn_code.split("mpeBendRange[channel] = semitones")[0]
+    check("!isMpeManagerChannel(channel)" in before_store
+          and "semitones = MPE_MEMBER_BEND_MAX;" in before_store,
+          "R8: RPN 0 does not clamp a member bend range before storing it")
+    seed = code_only(body(decoder, "void MidiDecoder::mpeResetBendRanges"))
+    check("MPE_MEMBER_BEND_MAX" in seed and "96" not in seed,
+          "R8: the menu / config file seed is still bounded by the spec maximum "
+          "instead of what the frequency path can render")
+    # The clamp must live in the MPE RPN path only. The ordinary bend is the one in
+    # the message switch, the one that writes MATRIX_SOURCE_PITCHBEND; the first
+    # MIDI_PITCH_BEND label in the file belongs to the byte length parser.
+    decoder_code = code_only(decoder)
+    ordinary_bend = decoder_code.split("MATRIX_SOURCE_PITCHBEND")[0]
+    ordinary_bend = ordinary_bend[ordinary_bend.rindex("case MIDI_PITCH_BEND:"):]
+    check("MPE_MEMBER_BEND_MAX" not in ordinary_bend
+          and "mpeBendRange" not in ordinary_bend,
+          "R8: the member clamp reached the ordinary pitch bend path")
+    check(decoder_code.count("MATRIX_SOURCE_PITCHBEND") == 1,
+          "R8: MATRIX_SOURCE_PITCHBEND is written in more than one place now")
 
     # --- R7: the member count is part of the zone configuration ---
     check("mpeLastMembers" in decoder_h and "mpeLastBend" in decoder_h,
@@ -362,6 +387,24 @@ def test_no_editor_or_preset_change():
 INV127 = 1.0 / 127.0
 
 
+def _member_bend_max():
+    """R8: read the limit out of the real header so the simulation cannot drift.
+
+    mpeSetPitchBend() turns a full bend into bend * range * 0.5f freqHarm units and
+    Voice::nextBlock() indexes exp2_harm at 512 + freqHarm * 20 over a usable 0..1022,
+    so the largest renderable range is (1022 - 512) / 20 * 2 = 51 semitones. 48 is the
+    value the firmware settles on; anything larger saturates.
+    """
+    for line in read(DECODER_H).splitlines():
+        if line.startswith("#define MPE_MEMBER_BEND_MAX"):
+            return int(line.split()[2])
+    check(False, "R8: MPE_MEMBER_BEND_MAX is not defined in MidiDecoder.h")
+    return 48
+
+
+MPE_MEMBER_BEND_MAX = _member_bend_max()
+
+
 class Voice(object):
     def __init__(self):
         self.playing = False
@@ -395,6 +438,9 @@ class Timbre(object):
         self.holdPedal = False
         self.lastChannelAfterTouch_ = 0.0
         self.lastSlide_ = 0.0
+        # MATRIX_SOURCE_PITCHBEND, the ordinary timbre wide bend. R8 asserts that the
+        # member bend clamp never reaches it.
+        self.pitchBend = 0.0
         self.mpeVoiceOfChannel_ = [-1] * 16
 
     # -- Timbre::mpeForgetAllChannels --------------------------------------
@@ -603,7 +649,8 @@ class Decoder(object):
 
     # -- MidiDecoder::mpeResetBendRanges -----------------------------------
     def mpeResetBendRanges(self):
-        configured = max(0, min(96, self.bendRange))
+        # R8: this seeds the MEMBER channels, so it is bounded by what is renderable
+        configured = max(0, min(MPE_MEMBER_BEND_MAX, self.bendRange))
         self.mpeBendRange = [configured] * 16
         if 0 <= self.master < 16:
             self.mpeBendRange[self.master] = 2
@@ -643,7 +690,11 @@ class Decoder(object):
         if self.mpeRpnMsb[channel] == 0:
             if self.mpeRpnLsb[channel] == 0:
                 # R5: per channel, manager and member ranges are distinct
-                self.mpeBendRange[channel] = min(96, value)
+                semitones = min(96, value)
+                # R8: a member range must be one the frequency path can render
+                if not self.isMpeManagerChannel(channel):
+                    semitones = min(MPE_MEMBER_BEND_MAX, semitones)
+                self.mpeBendRange[channel] = semitones
             elif self.mpeRpnLsb[channel] == 6 and self.isMpeManagerChannel(channel):
                 if value >= 1:
                     self.members = min(15, value)
@@ -652,7 +703,7 @@ class Decoder(object):
                     self.mpeBendRange[channel] = 2
                     for c in range(16):
                         if self.isMpeMemberChannel(c):
-                            self.mpeBendRange[c] = 48
+                            self.mpeBendRange[c] = MPE_MEMBER_BEND_MAX
         return True
 
     # -- MidiDecoder::midiEventReceived ------------------------------------
@@ -690,6 +741,10 @@ class Decoder(object):
             timbre = self.timbres[t]
             if kind == "aftertouch":
                 timbre.setMatrixChannelAfterTouch(INV127 * d1)
+            elif kind == "pitchwheel":
+                # setMatrixSource(MATRIX_SOURCE_PITCHBEND, pb / 8192.0f) - no semitone
+                # range anywhere on this path, the matrix row multiplier is the range.
+                timbre.pitchBend = d1
             elif kind == "note_on" and d2 > 0:
                 timbre.preenNoteOn(d1, d2)
             elif kind == "note_off" or (kind == "note_on" and d2 == 0):
@@ -1299,12 +1354,18 @@ def scenario_R5():
     check(all(d2.mpeBendRange[c] == 48 for c in range(1, 6)),
           "R5: the configuration message did not restore the 48 semitone member range")
 
-    # 0..96 is the range MPE 1.1 allows
+    # MPE 1.1 allows 0..96. R8 narrows that for MEMBER channels only, to what the
+    # frequency path can render; the manager entry keeps the full spec range because
+    # nothing reads it as semitones. Scenario R8 owns the member half of this.
     d3 = Decoder([Timbre(4)], mpeInst=1, master=0, members=15)
-    d3.midiEventReceived("control_change", 1, 101, 0)
-    d3.midiEventReceived("control_change", 1, 100, 0)
-    d3.midiEventReceived("control_change", 1, 6, 96)
-    check(d3.mpeBendRange[1] == 96, "R5: 96 semitones was not accepted")
+    d3.midiEventReceived("control_change", 0, 101, 0)
+    d3.midiEventReceived("control_change", 0, 100, 0)
+    d3.midiEventReceived("control_change", 0, 6, 96)
+    check(d3.mpeBendRange[0] == 96,
+          "R5/R8: the manager range must keep the full 0..96 spec range, got %r"
+          % d3.mpeBendRange[0])
+    check(all(d3.mpeBendRange[c] == MPE_MEMBER_BEND_MAX for c in range(1, 16)),
+          "R5/R8: a manager RPN 0 of 96 changed a member range")
 
 
 # --- R6 --------------------------------------------------------------------
@@ -1406,6 +1467,174 @@ def scenario_R7():
           "R7: the new bend setting was not seeded into the member ranges")
 
 
+# --- R8 --------------------------------------------------------------------
+def findex(freqHarmOffset):
+    """Voice::nextBlock(): findex = 512 + targetFreqHarm * 20, usable 0 .. 1022."""
+    return 512.0 + freqHarmOffset * 20.0
+
+
+def scenario_R8():
+    """A member pitch bend range must be one the frequency path can actually render.
+
+    RPN 0 used to accept the full MPE 1.1 range of 0..96 on a member channel, but
+    mpeSetPitchBend() turns a full bend into bend * range * 0.5f freqHarm units and
+    Voice::nextBlock() indexes exp2_harm at 512 + freqHarm * 20, clamped to 0..1022.
+    A range of 96 asks for index 1472 and silently collapses at the clamp, so the
+    firmware would have stored and reported a Glide it cannot produce.
+    """
+    check(MPE_MEMBER_BEND_MAX == 48,
+          "R8: the branch contract is a 0..48 semitone member range, header says %r"
+          % MPE_MEMBER_BEND_MAX)
+
+    # A. 48 is accepted and renders exactly, at both bend extremes, unclamped.
+    t, d = setup(bendRange=48)
+    member = 1
+    d.midiEventReceived("control_change", member, 101, 0)
+    d.midiEventReceived("control_change", member, 100, 0)
+    d.midiEventReceived("control_change", member, 6, 48)
+    check(d.mpeBendRange[member] == 48,
+          "R8-A: 48 semitones must be stored unchanged, got %r" % d.mpeBendRange[member])
+    d.midiEventReceived("note_on", member, 60, 100)
+    d.midiEventReceived("pitchwheel", member, 1.0)
+    v = voice_of(d, member)
+    check(near(t.voices[v].mpeFreqOffset, 24.0),
+          "R8-A: full positive bend over 48 semitones must be +24.0 freqHarm units, "
+          "got %r" % t.voices[v].mpeFreqOffset)
+    check(findex(t.voices[v].mpeFreqOffset) <= 1022.0,
+          "R8-A: +48 semitones needs exp2_harm index %r, past the 1022 clamp"
+          % findex(t.voices[v].mpeFreqOffset))
+    d.midiEventReceived("pitchwheel", member, -1.0)
+    check(near(t.voices[v].mpeFreqOffset, -24.0),
+          "R8-A: full negative bend over 48 semitones must be -24.0 freqHarm units, "
+          "got %r" % t.voices[v].mpeFreqOffset)
+    check(findex(t.voices[v].mpeFreqOffset) >= 0.0,
+          "R8-A: -48 semitones needs exp2_harm index %r, past the 0 clamp"
+          % findex(t.voices[v].mpeFreqOffset))
+
+    # B. 96 is clamped to 48. Nothing anywhere may still claim 96, and the audible
+    #    result must be the honest +/-24.0 rather than a saturated near miss.
+    t2, d2 = setup(bendRange=48)
+    d2.midiEventReceived("control_change", member, 101, 0)
+    d2.midiEventReceived("control_change", member, 100, 0)
+    d2.midiEventReceived("control_change", member, 6, 96)
+    check(d2.mpeBendRange[member] == MPE_MEMBER_BEND_MAX,
+          "R8-B: a member RPN 0 of 96 must clamp to %d, got %r"
+          % (MPE_MEMBER_BEND_MAX, d2.mpeBendRange[member]))
+    d2.midiEventReceived("note_on", member, 60, 100)
+    d2.midiEventReceived("pitchwheel", member, 1.0)
+    v2 = voice_of(d2, member)
+    check(near(t2.voices[v2].mpeFreqOffset, 24.0),
+          "R8-B: after the clamp a full bend must still be +24.0, got %r"
+          % t2.voices[v2].mpeFreqOffset)
+    check(not near(t2.voices[v2].mpeFreqOffset, 48.0),
+          "R8-B: the firmware still asked for 48.0 freqHarm units, which the "
+          "exp2_harm index would silently saturate")
+    for bend in (-1.0, -0.5, 0.0, 0.5, 1.0):
+        d2.midiEventReceived("pitchwheel", member, bend)
+        index = findex(t2.voices[v2].mpeFreqOffset)
+        check(0.0 <= index <= 1022.0,
+              "R8-B: bend %r reached exp2_harm index %r, outside the usable range"
+              % (bend, index))
+
+    # C. one above the limit clamps too - the boundary, not just the spec maximum
+    t3, d3 = setup(bendRange=48)
+    d3.midiEventReceived("control_change", member, 101, 0)
+    d3.midiEventReceived("control_change", member, 100, 0)
+    d3.midiEventReceived("control_change", member, 6, 49)
+    check(d3.mpeBendRange[member] == 48,
+          "R8-C: 49 semitones must clamp to 48, got %r" % d3.mpeBendRange[member])
+
+    # D. a value below the limit is untouched - the clamp must not become a floor
+    t4, d4 = setup(bendRange=48)
+    d4.midiEventReceived("control_change", member, 101, 0)
+    d4.midiEventReceived("control_change", member, 100, 0)
+    d4.midiEventReceived("control_change", member, 6, 12)
+    check(d4.mpeBendRange[member] == 12,
+          "R8-D: 12 semitones must be kept, got %r" % d4.mpeBendRange[member])
+    d4.midiEventReceived("note_on", member, 60, 100)
+    d4.midiEventReceived("pitchwheel", member, 1.0)
+    v4 = voice_of(d4, member)
+    check(near(t4.voices[v4].mpeFreqOffset, 6.0),
+          "R8-D: full bend over 12 semitones must be +6.0 freqHarm units, got %r"
+          % t4.voices[v4].mpeFreqOffset)
+    d4.midiEventReceived("pitchwheel", member, -1.0)
+    check(near(t4.voices[v4].mpeFreqOffset, -6.0),
+          "R8-D: full negative bend over 12 semitones must be -6.0 freqHarm units, "
+          "got %r" % t4.voices[v4].mpeFreqOffset)
+
+    # E. the manager keeps the documented limitation: full 0..96 bookkeeping, and it
+    #    still may not reach a member range.
+    t5, d5 = setup(bendRange=48)
+    manager = 0
+    d5.midiEventReceived("control_change", member, 101, 0)
+    d5.midiEventReceived("control_change", member, 100, 0)
+    d5.midiEventReceived("control_change", member, 6, 36)
+    d5.midiEventReceived("control_change", manager, 101, 0)
+    d5.midiEventReceived("control_change", manager, 100, 0)
+    d5.midiEventReceived("control_change", manager, 6, 96)
+    check(d5.mpeBendRange[manager] == 96,
+          "R8-E: the manager range is bookkeeping only and keeps the 0..96 spec "
+          "range, got %r" % d5.mpeBendRange[manager])
+    check(d5.mpeBendRange[member] == 36,
+          "R8-E: the manager RPN 0 changed a member range, got %r"
+          % d5.mpeBendRange[member])
+    d5.midiEventReceived("note_on", member, 60, 100)
+    d5.midiEventReceived("pitchwheel", member, 1.0)
+    v5 = voice_of(d5, member)
+    check(near(t5.voices[v5].mpeFreqOffset, 18.0),
+          "R8-E: the member voice did not use its own 36 semitone range, got %r"
+          % t5.voices[v5].mpeFreqOffset)
+
+    # F. an MPE configuration message still restores manager 2 and members 48
+    t6 = Timbre(6)
+    d6 = Decoder([t6], mpeInst=1, master=0, members=15, bendRange=12)
+    d6.midiEventReceived("control_change", 0, 101, 0)
+    d6.midiEventReceived("control_change", 0, 100, 6)
+    d6.midiEventReceived("control_change", 0, 6, 5)
+    check(d6.mpeBendRange[0] == 2,
+          "R8-F: the configuration message did not restore the 2 semitone manager "
+          "range, got %r" % d6.mpeBendRange[0])
+    check(all(d6.mpeBendRange[c] == 48 for c in range(1, 6)),
+          "R8-F: the configuration message did not restore the 48 semitone member "
+          "range")
+    d6.midiEventReceived("note_on", 1, 60, 100)
+    d6.midiEventReceived("pitchwheel", 1, 1.0)
+    v6 = voice_of(d6, 1)
+    check(near(t6.voices[v6].mpeFreqOffset, 24.0)
+          and findex(t6.voices[v6].mpeFreqOffset) <= 1022.0,
+          "R8-F: the restored 48 semitone default does not render inside exp2_harm")
+
+    # G. a hand edited preenfm2.txt cannot seed an unrenderable member range.
+    #    fillMidiConfig() writes midiConfigValue without a bounds check.
+    t7 = Timbre(6)
+    d7 = Decoder([t7], mpeInst=1, master=0, members=15, bendRange=96)
+    d7.mpeSyncZoneConfig()
+    check(all(d7.mpeBendRange[c] == MPE_MEMBER_BEND_MAX for c in range(1, 16)),
+          "R8-G: an out of range mpebend setting seeded a member range of %r"
+          % d7.mpeBendRange[1])
+    d7.midiEventReceived("note_on", 1, 60, 100)
+    d7.midiEventReceived("pitchwheel", 1, 1.0)
+    v7 = voice_of(d7, 1)
+    check(findex(t7.voices[v7].mpeFreqOffset) <= 1022.0,
+          "R8-G: the seeded range reached exp2_harm index %r"
+          % findex(t7.voices[v7].mpeFreqOffset))
+
+    # H. ordinary, non MPE pitch bend must not be touched by any of this. It goes to
+    #    MATRIX_SOURCE_PITCHBEND, whose range is the preset matrix multiplier.
+    t8 = Timbre(4)
+    d8 = Decoder([t8], mpeInst=0, timbreChannel=[1, 2, 3, 4])
+    d8.midiEventReceived("note_on", 0, 60, 100)
+    d8.midiEventReceived("pitchwheel", 0, 1.0)
+    check(near(t8.pitchBend, 1.0),
+          "R8-H: ordinary pitch bend no longer reaches MATRIX_SOURCE_PITCHBEND "
+          "unchanged, got %r" % t8.pitchBend)
+    d8.midiEventReceived("pitchwheel", 0, -1.0)
+    check(near(t8.pitchBend, -1.0),
+          "R8-H: ordinary pitch bend was clamped, got %r" % t8.pitchBend)
+    check(all(near(v.mpeFreqOffset, 0.0) for v in t8.voices),
+          "R8-H: ordinary pitch bend leaked into the per voice MPE bend offset")
+
+
 def main():
     test_no_new_matrix_source()
     test_polyat_contract_intact()
@@ -1434,7 +1663,8 @@ def main():
             ("R4 every reset path clears MPE state", scenario_R4),
             ("R5 manager and member bend ranges are distinct", scenario_R5),
             ("R6 RPN only inside the configured zone", scenario_R6),
-            ("R7 member count change resynchronises the zone", scenario_R7)):
+            ("R7 member count change resynchronises the zone", scenario_R7),
+            ("R8 member bend range stays renderable", scenario_R8)):
         before = len(failures)
         fn()
         print("  scenario %-42s %s"

@@ -187,6 +187,14 @@ enum EditorProtocolStatus {
 // through this protocol and are never reported as a store target.
 #define EDITOR_BANKTYPE_PREENFM_PATCH 0
 
+// R8. Largest member channel pitch bend sensitivity this firmware can actually render.
+// mpeSetPitchBend() turns a full bend into bend * range * 0.5f freqHarm units, and
+// Voice::nextBlock() reads exp2_harm at 512 + freqHarm * 20 over a usable 0 .. 1022.
+// 48 semitones is 24.0 units and index 992, which fits; 96 would be 48.0 units and
+// index 1472, which saturates. MPE 1.1 allows RPN 0 up to 96, so a member value above
+// this is clamped rather than stored as a range the audio path cannot reproduce.
+#define MPE_MEMBER_BEND_MAX 48
+
 
 
 

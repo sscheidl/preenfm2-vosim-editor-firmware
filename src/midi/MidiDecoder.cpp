@@ -67,7 +67,7 @@ MidiDecoder::MidiDecoder() {
     mpeLastBend = -1;
     mpeForgetAllChannelState();
     for (int c = 0; c < 16; c++) {
-        mpeBendRange[c] = 48;
+        mpeBendRange[c] = MPE_MEMBER_BEND_MAX;
     }
 
     for (int k=0; k<64; k++) {
@@ -403,11 +403,15 @@ void MidiDecoder::mpeSyncZoneConfig() {
 // Back to the configured defaults. MPE 1.1 gives the manager channel 2 semitones; the
 // member channels use the value from the menu until a controller negotiates its own.
 void MidiDecoder::mpeResetBendRanges() {
+    // R8. This value seeds the MEMBER channels, so it is bounded by what the per voice
+    // frequency path can render, not by the spec maximum. The menu already stops at 48,
+    // but preenfm2.txt is a plain name = value file that fillMidiConfig() reads without
+    // a bounds check, so a hand edited mpebend = 96 would otherwise get through.
     int configured = this->synthState->fullState.midiConfigValue[MIDICONFIG_MPE_BEND];
     if (configured < 0) {
         configured = 0;
-    } else if (configured > 96) {
-        configured = 96;
+    } else if (configured > MPE_MEMBER_BEND_MAX) {
+        configured = MPE_MEMBER_BEND_MAX;
     }
     for (int c = 0; c < 16; c++) {
         mpeBendRange[c] = configured;
@@ -491,14 +495,26 @@ bool MidiDecoder::mpeConsumeRpn(MidiEvent& midiEvent) {
     }
     if (mpeRpnMsb[channel] == 0) {
         if (mpeRpnLsb[channel] == 0) {
-            // R5. RPN 0, pitch bend sensitivity, 0..96 semitones. MPE 1.1 addresses it
-            // per channel : to the manager channel for the manager range, and to each
+            // R5. RPN 0, pitch bend sensitivity in semitones. MPE 1.1 addresses it per
+            // channel : to the manager channel for the manager range, and to each
             // member channel for that member channel's range. It is deliberately NOT
             // one shared value, or a manager RPN 0 of 2 semitones would become the
             // member Glide range.
+            //
+            // R8. The spec allows 0..96, but a member range is what the per voice
+            // frequency path actually has to render, and that path saturates above
+            // MPE_MEMBER_BEND_MAX (see the constant in the header). Storing 96 would
+            // claim a Glide the firmware then silently collapses at the exp2_harm
+            // bounds, so a member value is clamped to what it can reproduce. The
+            // manager entry keeps the full spec range : it is bookkeeping only, the
+            // manager bend goes through MATRIX_SOURCE_PITCHBEND whose range is the
+            // preset's matrix multiplier, so nothing reads it as semitones.
             int semitones = midiEvent.value[1];
             if (semitones > 96) {
                 semitones = 96;
+            }
+            if (!isMpeManagerChannel(channel) && semitones > MPE_MEMBER_BEND_MAX) {
+                semitones = MPE_MEMBER_BEND_MAX;
             }
             mpeBendRange[channel] = semitones;
         } else if (mpeRpnLsb[channel] == 6 && isMpeManagerChannel(channel)) {
@@ -515,10 +531,12 @@ bool MidiDecoder::mpeConsumeRpn(MidiEvent& midiEvent) {
                 mpeSyncZoneConfig();
                 // MPE 1.1 : an MPE configuration message resets the manager channel
                 // pitch bend sensitivity to 2 semitones and every member channel to 48.
+                // 48 is also MPE_MEMBER_BEND_MAX, so the spec default is exactly the
+                // largest member range this firmware can render (R8) - no clamp needed.
                 mpeBendRange[channel] = 2;
                 for (int c = 0; c < 16; c++) {
                     if (isMpeMemberChannel(c)) {
-                        mpeBendRange[c] = 48;
+                        mpeBendRange[c] = MPE_MEMBER_BEND_MAX;
                     }
                 }
             }
