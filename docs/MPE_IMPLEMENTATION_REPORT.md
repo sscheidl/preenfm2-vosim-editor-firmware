@@ -364,7 +364,7 @@ Makefile, the linker scripts.
 | 6 | `d2c73fb` | R1–R4 regression tests and report update |
 | 7 | `9682f55` | Review R5, R6 and R7: MPE 1.1 bend sensitivity, RPN scope and zone resize |
 | 8 | `9236892` | R5–R7 regression tests and report corrections |
-| 9 | this commit | Review R8: a member bend range must be one the pitch path can render |
+| 9 | `62d71fa` | Review R8: a member bend range must be one the pitch path can render |
 | 8 | branch HEAD | R5–R7 regression tests and report update |
 
 Commits 1–6 were reviewed and are **not** rewritten.
