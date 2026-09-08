@@ -12,9 +12,11 @@ Companion to tools/polyat_test.py, same safety rules:
     on a bare Python 3 without mido;
   * every scenario releases the notes it started, and Ctrl-C releases what is still held.
 
-It does NOT send the MPE Configuration Message. The firmware does not parse RPN at all
-(see docs/MPE_IMPLEMENTATION_REPORT.md); the zone is configured in the PreenFM2 menu.
-The default here matches the firmware default: master channel 1, members 2..16.
+This test tool does NOT send the MPE Configuration Message (RPN 6). The firmware does
+parse the minimal MPE-related RPN subset documented in docs/MPE_IMPLEMENTATION_REPORT.md,
+but the deterministic scenarios here assume the Lower Zone has already been configured
+on the PreenFM2 (or by the controller). The default here matches the firmware default:
+master channel 1, members 2..16, member pitch-bend range 48 semitones.
 
 Dependency: mido (plus a backend) only to actually send.
 
@@ -429,14 +431,12 @@ def self_test():
     half = glide(2, 24, 48)
     value = (half.raw()[2] << 7) | half.raw()[1]
     check(8192 + 4000 < value < 8192 + 4200, "half range bend landed at %d" % value)
-    # out of range is clamped, never wrapped
     for semitones in (-999, 999):
         e = glide(2, semitones, 48)
         v = (e.raw()[2] << 7) | e.raw()[1]
         check(0 <= v <= 16383, "clamping failed for %d semitones" % semitones)
         check(all(0 <= b <= 127 for b in e.raw()[1:]), "bend data byte has bit 7 set")
 
-    # ranges
     for bad in (-1, 128):
         try:
             press(2, bad)
@@ -486,7 +486,6 @@ def self_test():
         check(not held, "scenario %s leaves notes hanging: %s" % (key, sorted(held)))
         check(pedal == 0, "scenario %s leaves the sustain pedal down" % key)
 
-    # scenario E really must use one note number on two different channels
     e_events = SCENARIOS["E"][1](Opt())
     ons = [(e.channel, e.data1) for e in e_events if e.kind == "note_on"]
     same = [c for c, n in ons if n == C4]
