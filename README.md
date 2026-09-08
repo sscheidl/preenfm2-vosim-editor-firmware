@@ -1,140 +1,131 @@
-# PreenFM2 3.00 alpha firmware — VOSIM base with editor remote protocol
+# PreenFM2 3.00 alpha firmware — VOSIM + editor protocol + PolyAT/MPE development
 
-> ## ⚠ Hardware-tested developer pre-release — not a final firmware release
+> ## ⚠ Experimental developer firmware — hardware validation of the new expression work is still pending
 >
-> The firmware in `release/editor-protocol-3.00alpha/` compiles and links cleanly with the
-> prescribed toolchain, and its new data path has been reviewed statically and checked by
-> simulation. The regular 3.00-alpha build has since been installed on a physical PreenFM2:
-> the initial smoke test was positive, continued operation with PreenFM+ has remained
-> stable, and no firmware anomaly has been observed so far.
+> This repository contains the PreenFM2 3.00-alpha VOSIM firmware plus the editor remote-store protocol and the current development work for true MIDI Polyphonic Key Pressure and Lower-Zone MPE.
 >
-> This is a developer version, not a final or general production release. Before flashing,
-> follow [`HARDWARE_SMOKE_TEST.md`](release/editor-protocol-3.00alpha/HARDWARE_SMOKE_TEST.md),
-> back up the USB key, and test Store first on a throwaway bank. The Store command writes
-> immediately, by design, with no confirmation step.
+> The existing 3.00-alpha editor-protocol build has already run successfully on a physical PreenFM2. The newer PolyAT/MPE branch has passed source review, host-side simulations and comparative cloud compile/link checks, but **has not yet been built with the historical release toolchain or flashed to hardware**.
+>
+> Do not flash the GCC-13 cloud binaries. The next release gate is a clean local build with `gcc-arm-none-eabi 4.7-2014q2` / GCC 4.7.4, followed by manual hardware validation.
 
 <p align="center">
   <img src="docs/PreenFM2_2026.png" alt="PreenFM2 test hardware running the 3.00 alpha firmware" width="900" />
 </p>
 
-The physical PreenFM2 test unit running this 3.00-alpha developer firmware.
+---
+
+## Current development status — 2026-09-08
+
+Current development branch:
+
+```text
+feature/full-mpe
+```
+
+Last source-reviewed firmware checkpoint before this documentation-only cleanup:
+
+```text
+4655c10efcf4eb3343984941403511ae7bbe6b6b
+```
+
+Current state:
+
+- **3.00 Alpha / VOSIM / editor remote protocol:** retained.
+- **True MIDI Polyphonic Key Pressure:** implemented and independently source-reviewed. Existing `AftT` matrix routes become note-local when MIDI Polyphonic Key Pressure is received; ordinary Channel Pressure keeps the timbre-wide behaviour.
+- **Lower-Zone MPE:** implemented for the intended ROLI workflow:
+  - Strike → Note-On velocity
+  - Press → per-voice `AftT`
+  - Glide → per-voice pitch bend
+  - Slide → per-voice CC74 / `MPESLIDE`
+- **Member pitch-bend range:** supported up to **±48 semitones**. Larger member RPN-0 values are clamped because the current `exp2_harm` frequency representation cannot reproduce ±96 without saturation.
+- **Host verification:** `mpe_state_test.py` 325 checks, `polyat_state_test.py` 79 checks, `protocol_sim_test.py` 115 checks; these are simulations / structural tests, not firmware unit tests and not hardware tests.
+- **Comparative cloud builds:** `pfm`, `pfmo`, `pfmcv`, `pfmcvo` compile/link with the GCC-13.2 substitute environment and no new warnings. These binaries are **not release-valid and must not be flashed**.
+
+Known MPE limitations are documented rather than hidden: Lower Zone only, RPN 6 with `n=0` is consumed but does not deactivate MPE, manager-channel pitch-bend sensitivity is recorded but not applied as a semitone range, no Lift/release-velocity expression, and MPE with Unison or the arpeggiator is not supported.
+
+Detailed reports:
+
+- [`docs/POLYAT_IMPLEMENTATION_REPORT.md`](docs/POLYAT_IMPLEMENTATION_REPORT.md)
+- [`docs/POLYAT_HARDWARE_TEST_CHECKLIST.md`](docs/POLYAT_HARDWARE_TEST_CHECKLIST.md)
+- [`docs/MPE_IMPLEMENTATION_REPORT.md`](docs/MPE_IMPLEMENTATION_REPORT.md)
+
+Hardware-test tools:
+
+- `tools/polyat_test.py` — deterministic MIDI Polyphonic Key Pressure / Channel Pressure sender
+- `tools/midi_monitor.py` — MIDI input monitor to verify what the controller actually transmits
+- `tools/mpe_test.py` — deterministic Lower-Zone MPE sender for Press / Glide / Slide / sustain / voice-allocation scenarios
+
+### Next gate
+
+The next step is deliberately **not more feature work**:
+
+1. check out the final `feature/full-mpe` source locally;
+2. build cleanly with the historical `gcc-arm-none-eabi 4.7-2014q2` / GCC 4.7.4 toolchain;
+3. build all four targets separately (`pfm`, `pfmo`, `pfmcv`, `pfmcvo`) with a clean build directory between targets;
+4. record the exact output filename and SHA-256 of every resulting binary;
+5. identify the correct hardware image for the physical PreenFM2;
+6. flash manually — never automatically;
+7. validate ordinary MIDI and Channel Aftertouch first, then PolyAT, then Lower-Zone MPE with LUMI / Seaboard RISE.
+
+See [`docs/POLYAT_HARDWARE_TEST_CHECKLIST.md`](docs/POLYAT_HARDWARE_TEST_CHECKLIST.md) and §18 of [`docs/MPE_IMPLEMENTATION_REPORT.md`](docs/MPE_IMPLEMENTATION_REPORT.md).
 
 ---
 
 ## What this repository is
 
-A standalone repository for one piece of work: adding a MIDI protocol that lets a PreenFM
-editor **store** the current edit buffer into a bank slot, ask the firmware **where** it
-currently is, and ask **whether** the protocol is available at all.
+This repository started as a focused extension of the PreenFM2 VOSIM firmware: a MIDI protocol that lets PreenFM+ store the current edit buffer, query the current bank/preset position and detect firmware capability support. That 3.00-alpha base is still preserved.
+
+The current development branch additionally carries the PolyAT and Lower-Zone MPE work described above. It remains a standalone firmware repository; it is not a GitHub fork or a submodule of the editor project. Original history, GPL headers and author attribution are retained.
 
 > [!IMPORTANT]
-> **Experimental AI-assisted development.** This tAUREON project explores the practical
-> benefits and limits of AI-assisted work on audio and synthesizer software. The editor
-> protocol and its documentation were developed through human-directed collaboration with
-> OpenAI Codex and Anthropic Claude Code. Treat this firmware as experimental developer
-> software and retain a known-good firmware image before flashing.
-
-It is not a GitHub fork and not a submodule of any editor project. It carries the full
-original commit history, and all GPL and copyright headers are preserved unchanged.
+> **Experimental AI-assisted development.** This tAUREON project explores the practical benefits and limits of AI-assisted work on audio and synthesizer software. Development has been human-directed with OpenAI Codex / ChatGPT and Anthropic Claude Code used in separate implementation and review roles. Treat the current expression branch as developer firmware until the historical-toolchain build and physical-hardware gates have passed.
 
 | | |
 |---|---|
 | origin of the code | [`pvig/preenfm2`](https://github.com/pvig/preenfm2) |
-| branch | `vosim` |
-| base commit | `6ed604a43636c00bfbac9613c8f5a79a7582dfa7` |
-| working branch | `feature/editor-remote-store` |
-| firmware version | `3.00 alpha` (pre-release; the base was `2.21b`) |
+| VOSIM base branch | `vosim` |
+| VOSIM base commit | `6ed604a43636c00bfbac9613c8f5a79a7582dfa7` |
+| editor-protocol baseline branch | `feature/editor-remote-store` |
+| reviewed PolyAT checkpoint | `feature/true-poly-aftertouch` @ `f503e7fd34c1df887e421f782520275a7b807632` |
+| current development branch | `feature/full-mpe` |
+| firmware version family | `3.00 alpha` (pre-release; original base was `2.21b`) |
 
 Remotes are set up as:
 
-```
-upstream -> https://github.com/pvig/preenfm2.git          (fetch only)
+```text
+upstream -> https://github.com/pvig/preenfm2.git
 origin   -> https://github.com/sscheidl/preenfm2-vosim-editor-firmware.git
 ```
 
-The `vosim` branch here is the untouched base, kept for a like for like diff. All work is
-on `feature/editor-remote-store`.
-
 ### Why the VOSIM branch
 
-`pvig/preenfm2` `vosim` carries the VOSIM algorithms 29-32 and the additional LFO shapes
-6-8. Those had to be preserved, so this work is based on that branch rather than on
-`master`, `dispatcher`, or the official Ixox repository. No changes from other development
-branches were merged in.
-
-The base commit `6ed604a` is also the head of
-[`Ixox/preenfm2` PR #18](https://github.com/Ixox/preenfm2/pull/18), the pull request that
-publishes the VOSIM work and is still open against `master`. That PR is the source behind
-the `p2_2.21b_lfo_vosim.bin` build circulated on the
-[ixox forum](https://ixox.fr/forum/index.php?topic=70017.15). In other words, the extended
-algorithms and LFO shapes are already in this firmware's base, and `3.00 alpha` is that
-build plus the editor protocol, not an alternative to it. The reference binary and the
-evidence are in
-[`release/fw_2.21b_lfo_vosim/`](release/fw_2.21b_lfo_vosim/README.md).
+`pvig/preenfm2` `vosim` carries VOSIM algorithms 29–32 and the additional LFO shapes 6–8. They are part of the base and are preserved by the 3.00-alpha work. The reference material for the historical VOSIM build is under [`release/fw_2.21b_lfo_vosim/`](release/fw_2.21b_lfo_vosim/README.md).
 
 ---
 
-## What was added
+## Editor remote protocol
 
-Three requests on NRPN page 4, an address page every earlier firmware silently ignores:
+The editor extension uses NRPN page 4, which older firmware silently ignores:
 
 | NRPN page / LSB | command |
 |---|---|
-| 4 / 0 | capability query — protocol version and capability bits |
-| 4 / 1 | position query — bank type, bank, preset, valid flag |
-| 4 / 2 | store — `target = (bank << 7) \| preset`, both zero based |
+| 4 / 0 | capability query |
+| 4 / 1 | current-position query |
+| 4 / 2 | store current edit buffer to a bank/preset target |
 
-Responses come back on page 4, LSB 64 and above, with explicit status codes for success,
-bank absent or not writable, invalid slot, ambiguous midi channel, storage error, and
-protocol error.
+Responses use page 4, LSB 64 and above, with explicit status codes. The protocol specification and the already prepared 3.00-alpha editor-protocol build are in [`release/editor-protocol-3.00alpha/`](release/editor-protocol-3.00alpha/).
 
-Full byte level specification: [`release/editor-protocol-3.00alpha/EDITOR_PROTOCOL.md`](release/editor-protocol-3.00alpha/EDITOR_PROTOCOL.md).
+[PreenFM+ 4.0.4](https://github.com/sscheidl/preenfm2-Editor) implements capability detection, position query, guarded Store and status reporting. On the device, `Receives:` must include NRPN for those requests.
 
-Loading over CC 0, CC 32 and program change is unchanged, as is the full parameter dump
-over NRPN 127/127. Synthesis, the VOSIM algorithms, the LFO shapes and the patch storage
-format are untouched — patches stay compatible with 2.21 in both directions.
-
-### Compatible editor and device settings
-
-[PreenFM+ 4.0.4](https://github.com/sscheidl/preenfm2-Editor) implements this protocol,
-including capability detection, position query, guarded Store and status reporting. Other
-editors must implement the protocol before they can use these functions. On the device,
-`Receives:` must be set to `NRPN` or `CC & NRPN`, otherwise the requests are ignored and
-nothing is answered.
-
-An editor should detect support by sending the capability query and waiting for an answer.
-It must not infer support from the firmware version string.
-
----
-
-## Where the results are
-
-`release/editor-protocol-3.00alpha/`
-
-| file | content |
-|---|---|
-| `p2_3.00alpha.bin` | regular firmware |
-| `p2_3.00alphao.bin` | overclock firmware (byte identical, see the build report) |
-| `p2_3.00alpha.elf`, `p2_3.00alphao.elf` | with debug symbols |
-| `p2_3.00alpha_symbol.txt`, `p2_3.00alphao_symbol.txt` | symbol maps |
-| `SHA256SUMS` | checksums |
-| `editor-protocol-3.00alpha.patch` | full git diff against the base commit |
-| `EDITOR_PROTOCOL.md` | protocol specification |
-| `BUILD_REPORT.md` | toolchain, commands, sizes, warnings, what could not be tested |
-| `FIRMWARE_SAFETY_REVIEW.md` | independent review of the store data path |
-| `CHANGELOG_EDITOR_PRERELEASE.md` | change log |
-| `HARDWARE_SMOKE_TEST.md` | step by step first hardware test, read this before flashing |
+Existing patch format and ordinary program/bank loading remain compatible with the underlying 2.21/VOSIM format.
 
 ---
 
 ## Building
 
-Needs [arm-gcc 4.7-2014q2](https://launchpad.net/gcc-arm-embedded/+milestone/4.7-2014-q2-update),
-the version the project has always used. The toolchain is **not** part of this repository.
+The historical toolchain is [arm-gcc 4.7-2014q2](https://launchpad.net/gcc-arm-embedded/+milestone/4.7-2014-q2-update). It is not bundled in this repository.
 
-`GCC_PATH` in the `Makefile` still points at the original author's home directory. Either
-edit it locally, or override the tool variables on the command line with the toolchain on
-`PATH`, which is what the release build did:
+`GCC_PATH` in the Makefile still points to the original author's environment, so normally place the historical toolchain on `PATH` and override the tools on the command line:
 
 ```bash
 export PATH="/path/to/gcc-arm-none-eabi-4_7-2014q2/bin:$PATH"
@@ -144,79 +135,36 @@ MK='make CC=arm-none-eabi-c++ AS=arm-none-eabi-as NM=arm-none-eabi-nm \
 
 $MK clean && $MK pfm
 $MK clean && $MK pfmo
+$MK clean && $MK pfmcv
+$MK clean && $MK pfmcvo
 ```
 
-Always run a full `clean` between targets, as the project warns.
+For the current hardware-validation build, also clear stale build outputs between targets and record the filename from `.binfirmware`; do not assume that the last `.bin` in `build/` belongs to the target just built.
 
-Automated protocol check, which complements but does not replace the subsequent
-physical-hardware testing:
+Useful host checks:
 
 ```bash
 python test/host/protocol_sim_test.py
+python test/host/polyat_state_test.py
+python test/host/mpe_state_test.py
+python tools/polyat_test.py --self-test
+python tools/mpe_test.py --self-test
 ```
+
+These checks complement — and never replace — the historical-toolchain build and physical-hardware test.
 
 ---
 
 ## Authors and license
 
-The PreenFM2 firmware is the work of **Xavier Hosxe**. The VOSIM branch this build starts
-from is maintained by **pvig**. The editor remote protocol in this repository was added by
-**tAUREON**, with human-directed assistance from OpenAI Codex and Anthropic Claude Code.
+The PreenFM2 firmware is the work of **Xavier Hosxe**. The VOSIM branch used as the base is maintained by **pvig**. The tAUREON 3.00-alpha editor protocol, PolyAT and MPE development in this repository were produced through human-directed development with AI assistance.
 
-The boot screen credits both: `preenfm2 v3.00 alpha` / `By Hosxe & tAUREON`.
+The boot screen for the 3.00-alpha line credits `By Hosxe & tAUREON`.
 
-GPL, as the upstream project. Every source file keeps its original license header and its
-original author attribution unchanged. See the headers in `src/` — most carry
-`Copyright 2013 Xavier Hosxe` and the GNU General Public License, version 3 or later. The
-USB manufacturer string still identifies the device as Xavier Hosxe's design.
+GPL, as upstream. Original source-file copyright and GPL headers remain intact; the USB manufacturer string continues to identify the device as Xavier Hosxe's design.
 
 ---
 
-# Upstream README
+## Upstream README summary
 
-The text below is the README of the base repository, kept for reference.
-
----
-
-# preenfm2 firmware
-
-Ixox/preenfm2 is the official repository of the preenfm2 firmware.
-
-You can find here the compiled firmware, its code source and some hardware files for the PCB, MCU board and cases.
-
-To flash the preenfm2 for the first time, [follow these instructions](https://github.com/Ixox/preenfm2/tree/master/flash)
-
-
-## Compiling the firmware
-
-To compile the firmware, you'll need [arm-gcc version 4.7](https://launchpad.net/gcc-arm-embedded/+milestone/4.7-2014-q2-update)
-
-Add the bin directory to your PATH, and run **'make'**, you'll get the list of the available targets.
-
-```bash
-$ make
-You must chose a target 
-Don't forget to clean between different build targets
-   clean : clean build directory
-   pfm : build pfm2 firmware
-   pfmcv : build pfm2 firmware for Eurorack 
-   installdfu : flash last compiled firmware through DFU
-   zip : create zip with all inside
-```
-Since some refactoring, the bootloader does not compile anymore. But it's available in its binary format.
-
-Then put your preenfm2 in [bootloader mode](http://ixox.fr/preenfm2/manual/upgrade-firmware/). Look at DFU part 4.
-
-To flash the firmware on the preenfm2 using the DFU protocol :
-
-```bash
-make installdfu
-```
-
-Once it's done, unplug the power cable and plug it back.
-
-## New Filters in 2.11
-
-Many effects have been added in the firmware 2.11. They were coded by [Toltekradiation](http://ixox.fr/forum/index.php?topic=69544.0).
-
-His github repo is [here](https://github.com/pvig/preenfm2). You'll find there some description of the different effects.
+The official PreenFM2 firmware repository is [`Ixox/preenfm2`](https://github.com/Ixox/preenfm2). The upstream project uses ARM GCC 4.7 and provides the original hardware, firmware and flashing documentation. For first-time flashing and bootloader details, follow the upstream PreenFM2 instructions rather than treating this development README as a replacement for them.
