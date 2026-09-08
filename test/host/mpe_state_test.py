@@ -235,7 +235,8 @@ def test_review_findings_r1_to_r4():
         "if (timbreIndex == 0)")[0]
     check("isMpeManagerChannel(midiEvent.channel)" in received,
           "R1: the manager channel is still not recognised in the routing")
-    manager_branch = received.split("isMpeManagerChannel(midiEvent.channel)")[1][:200]
+    # the last mention is the manager dispatch; the earlier one is the R6 zone gate
+    manager_branch = received.split("isMpeManagerChannel(midiEvent.channel)")[-1][:200]
     check("timbres[timbreIndex++] = mpeTimbre" in manager_branch,
           "R1: the manager channel does not address the MPE timbre explicitly")
     check("timbreIndex > 0" in received,
@@ -252,20 +253,53 @@ def test_review_findings_r1_to_r4():
     check("mpeConsumeRpn(midiEvent)" in received and "return;" in received,
           "R2: RPN is not consumed in the routing")
     order = received.find("mpeConsumeRpn")
-    member = received.find("isMpeMemberChannel(midiEvent.channel)")
+    member = received.find("mpeEventReceived(mpeTimbre, midiEvent)")
     check(0 < order < member,
-          "R2: RPN must be consumed before the member channel branch")
+          "R2: RPN must be consumed before the member channel dispatch")
     rpn = body(decoder, "bool MidiDecoder::mpeConsumeRpn")
+    gmt_src = body(decoder, "int MidiDecoder::getMpeTimbre")
     for cc in ("101", "100"):
         check("case %s:" % cc in rpn, "R2: CC%s is not handled" % cc)
     check("case 6:" in rpn and "case 38:" in rpn, "R2: data entry is not handled")
     check("0x7F" in rpn,
           "R2: RPN Null is not handled, so CC6/CC38 would always be swallowed and the "
           "editor nrpn protocol would break")
-    check("MIDICONFIG_MPE_BEND" in rpn, "R2: RPN 0 does not set the bend range")
     check("MIDICONFIG_MPE_MEMBERS" in rpn, "R2: RPN 6 does not set the member count")
-    check("isMpeManagerChannel(channel)" in rpn,
-          "R2: an RPN on any channel could change a setting")
+    check("mpeRpnLsb[channel] == 6 && isMpeManagerChannel(channel)" in rpn,
+          "R2: an MPE configuration message from a member channel could resize the zone")
+    check("isMpeManagerChannel(midiEvent.channel)" in received
+          and "isMpeMemberChannel(midiEvent.channel)" in received,
+          "R6: the RPN state machine is not gated on the zone channels")
+    gate = received.split("mpeConsumeRpn")[0][-400:]
+    check("isMpeManagerChannel(midiEvent.channel)" in gate
+          and "isMpeMemberChannel(midiEvent.channel)" in gate,
+          "R6: RPN is consumed on channels outside the configured zone")
+
+    # --- R5: pitch bend sensitivity is per channel ---
+    check("uint8_t mpeBendRange[16];" in decoder_h,
+          "R5: pitch bend sensitivity is not per channel")
+    check("mpeBendRange[channel] = semitones" in rpn,
+          "R5: RPN 0 does not set that channel's own bend range")
+    check("MIDICONFIG_MPE_BEND" not in rpn,
+          "R5: RPN 0 still writes the single shared bend setting, so a manager RPN 0 "
+          "would become the member Glide range")
+    check("96" in rpn, "R5: the RPN 0 range is not the 0..96 semitones MPE 1.1 allows")
+    check("mpeBendRange[c] = 48" in rpn and "mpeBendRange[channel] = 2" in rpn,
+          "R5: an MPE configuration message does not restore the 2/48 defaults")
+    check("int bendRange = mpeBendRange[channel];" in decoder,
+          "R5: a member note does not use its own channel's bend range")
+
+    # --- R7: the member count is part of the zone configuration ---
+    check("mpeLastMembers" in decoder_h and "mpeLastBend" in decoder_h,
+          "R7: a member count change is not detected")
+    sync = body(decoder, "void MidiDecoder::mpeSyncZoneConfig")
+    for field in ("mpeLastManager", "mpeLastMembers", "mpeLastBend"):
+        check(field in sync, "R7: mpeSyncZoneConfig does not snapshot %s" % field)
+    check("mpeForgetAllChannelState()" in sync and "mpeResetBendRanges()" in sync
+          and "mpeForgetAllChannels()" in sync,
+          "R7: a zone change does not drop expression, bend ranges and ownership")
+    check("MIDICONFIG_MPE_MEMBERS" in gmt_src and "MIDICONFIG_MPE_BEND" in gmt_src,
+          "R7: the member count and bend setting are not part of the change detection")
 
     # --- R3: unseen member expression must not overwrite the manager baseline ---
     check("bool mpePressureSeen[16];" in decoder_h and "bool mpeSlideSeen[16];" in decoder_h,
@@ -282,11 +316,17 @@ def test_review_findings_r1_to_r4():
 
     # --- R4: every reset path clears decoder AND voice MPE state ---
     forget = body(decoder, "void MidiDecoder::mpeForgetChannelState")
-    for field in ("mpePressureSeen", "mpeSlideSeen", "mpeRpnMsb", "mpeRpnLsb"):
+    for field in ("mpePressureSeen", "mpeSlideSeen"):
         check(field in forget, "R4: mpeForgetChannelState does not clear %s" % field)
     forget_all = body(decoder, "void MidiDecoder::mpeForgetAllChannelState")
-    for field in ("mpePressureSeen", "mpeSlideSeen", "mpeRpnMsb", "mpeRpnLsb"):
+    for field in ("mpePressureSeen", "mpeSlideSeen"):
         check(field in forget_all, "R4: mpeForgetAllChannelState does not clear %s" % field)
+    # RPN selection is sticky in midi and must NOT be cleared by a note or a reset:
+    # doing so would drop the selection between the data entry msb and lsb of an MPE
+    # configuration message, and its lsb would fall through to the nrpn path.
+    check("mpeRpnMsb" not in forget and "mpeRpnMsb" not in forget_all,
+          "R4: a reset clears the RPN selection, which breaks a configuration message "
+          "mid sequence")
     check("void afterNewParamsLoad(int timbre) { mpeForgetAllChannelState(); }" in decoder_h,
           "R4: a parameter load does not clear the decoder MPE state")
     check("void afterNewComboLoad() { mpeForgetAllChannelState(); }" in decoder_h,
@@ -298,8 +338,7 @@ def test_review_findings_r1_to_r4():
               "R4: %s does not clear the decoder MPE state" % case)
     check("mpeLastTimbre" in decoder_h and "mpeLastManager" in decoder_h,
           "R4: an MPE configuration change is not detected")
-    gmt = body(decoder, "int MidiDecoder::getMpeTimbre")
-    check("mpeForgetAllChannelState()" in gmt,
+    check("mpeSyncZoneConfig()" in gmt_src,
           "R4: switching MPE off or moving the zone leaves stale expression behind")
     # the real Voice, not the simulation
     vload = voice_h.split("void afterNewParamsLoad()")[1].split("for (int j")[0]
@@ -532,8 +571,11 @@ class Decoder(object):
         self.mpeSlideSeen = [False] * 16
         self.mpeRpnMsb = [0x7F] * 16
         self.mpeRpnLsb = [0x7F] * 16
+        self.mpeBendRange = [bendRange] * 16
         self.mpeLastTimbre = -1
         self.mpeLastManager = -1
+        self.mpeLastMembers = -1
+        self.mpeLastBend = -1
         # observation only, so the tests can see where an ordinary message landed
         self.ordinaryTimbres = []
         self.nrpnDataEntry = []         # CC6/CC38 that reached the nrpn path
@@ -542,11 +584,29 @@ class Decoder(object):
     # -- MidiDecoder::getMpeTimbre, including the R4 configuration change check --
     def getMpeTimbre(self):
         timbre = -1 if self.mpeInst == 0 else self.mpeInst - 1
-        if timbre != self.mpeLastTimbre or self.master != self.mpeLastManager:
+        if (timbre != self.mpeLastTimbre or self.master != self.mpeLastManager
+                or self.members != self.mpeLastMembers
+                or self.bendRange != self.mpeLastBend):
             self.mpeLastTimbre = timbre
-            self.mpeLastManager = self.master
-            self.mpeForgetAllChannelState()
+            self.mpeSyncZoneConfig()
         return timbre
+
+    # -- MidiDecoder::mpeSyncZoneConfig ------------------------------------
+    def mpeSyncZoneConfig(self):
+        self.mpeLastManager = self.master
+        self.mpeLastMembers = self.members
+        self.mpeLastBend = self.bendRange
+        self.mpeForgetAllChannelState()
+        self.mpeResetBendRanges()
+        for t in self.timbres:
+            t.mpeForgetAllChannels()
+
+    # -- MidiDecoder::mpeResetBendRanges -----------------------------------
+    def mpeResetBendRanges(self):
+        configured = max(0, min(96, self.bendRange))
+        self.mpeBendRange = [configured] * 16
+        if 0 <= self.master < 16:
+            self.mpeBendRange[self.master] = 2
 
     def isMpeManagerChannel(self, channel):
         return channel == self.master
@@ -561,8 +621,6 @@ class Decoder(object):
         self.mpeBend[channel] = 0.0
         self.mpePressureSeen[channel] = False
         self.mpeSlideSeen[channel] = False
-        self.mpeRpnMsb[channel] = 0x7F
-        self.mpeRpnLsb[channel] = 0x7F
 
     def mpeForgetAllChannelState(self):
         for c in range(16):
@@ -582,12 +640,19 @@ class Decoder(object):
             return False                       # RPN Null: ordinary data entry
         if cc == 38:
             return True
-        if self.isMpeManagerChannel(channel) and self.mpeRpnMsb[channel] == 0:
+        if self.mpeRpnMsb[channel] == 0:
             if self.mpeRpnLsb[channel] == 0:
-                self.bendRange = min(48, value)
-            elif self.mpeRpnLsb[channel] == 6:
+                # R5: per channel, manager and member ranges are distinct
+                self.mpeBendRange[channel] = min(96, value)
+            elif self.mpeRpnLsb[channel] == 6 and self.isMpeManagerChannel(channel):
                 if value >= 1:
                     self.members = min(15, value)
+                    self.mpeSyncZoneConfig()
+                    # MPE 1.1: MCM resets manager to 2 and every member to 48
+                    self.mpeBendRange[channel] = 2
+                    for c in range(16):
+                        if self.isMpeMemberChannel(c):
+                            self.mpeBendRange[c] = 48
         return True
 
     # -- MidiDecoder::midiEventReceived ------------------------------------
@@ -595,7 +660,9 @@ class Decoder(object):
         timbres = []
         mpe = self.getMpeTimbre()
         if mpe >= 0:
-            if kind == "control_change" and self.mpeConsumeRpn(channel, d1, d2):
+            # R6: only channels of the configured zone feed the RPN state machine
+            inZone = self.isMpeManagerChannel(channel) or self.isMpeMemberChannel(channel)
+            if kind == "control_change" and inZone and self.mpeConsumeRpn(channel, d1, d2):
                 return
             if self.isMpeMemberChannel(channel):
                 self.mpeEventReceived(mpe, kind, channel, d1, d2)
@@ -653,14 +720,14 @@ class Decoder(object):
                 t.mpeSetMatrixSource(channel, "aftertouch", self.mpePressure[channel])
             if self.mpeSlideSeen[channel]:
                 t.mpeSetMatrixSource(channel, "slide", self.mpeSlide[channel])
-            t.mpeSetPitchBend(channel, self.mpeBend[channel], self.bendRange)
+            t.mpeSetPitchBend(channel, self.mpeBend[channel], self.mpeBendRange[channel])
         elif kind == "aftertouch":
             self.mpePressure[channel] = INV127 * d1
             self.mpePressureSeen[channel] = True
             t.mpeSetMatrixSource(channel, "aftertouch", self.mpePressure[channel])
         elif kind == "pitchwheel":
             self.mpeBend[channel] = d1
-            t.mpeSetPitchBend(channel, d1, self.bendRange)
+            t.mpeSetPitchBend(channel, d1, self.mpeBendRange[channel])
         elif kind == "control_change" and d1 == 74:
             self.mpeSlide[channel] = INV127 * d2
             self.mpeSlideSeen[channel] = True
@@ -1016,11 +1083,13 @@ def scenario_R2():
     check(d.isMpeMemberChannel(5) and not d.isMpeMemberChannel(6),
           "R2: the zone did not shrink to the configured member count")
 
-    # RPN 0, pitch bend sensitivity
-    d.midiEventReceived("control_change", 0, 101, 0)
-    d.midiEventReceived("control_change", 0, 100, 0)
-    d.midiEventReceived("control_change", 0, 6, 24)
-    check(d.bendRange == 24, "R2: RPN 0 did not set the bend range, got %r" % d.bendRange)
+    # RPN 0 on a member channel sets that member channel's bend range
+    d.midiEventReceived("control_change", 1, 101, 0)
+    d.midiEventReceived("control_change", 1, 100, 0)
+    d.midiEventReceived("control_change", 1, 6, 24)
+    check(d.mpeBendRange[1] == 24,
+          "R2: member RPN 0 did not set that channel's bend range, got %r"
+          % d.mpeBendRange[1])
     d.midiEventReceived("note_on", 1, 60, 100)
     d.midiEventReceived("pitchwheel", 1, 1.0)
     v = voice_of(d, 1)
@@ -1035,18 +1104,20 @@ def scenario_R2():
     check(d.nrpnDataEntry == [(6, 42), (38, 7)],
           "R2: after RPN Null the data entry bytes must reach the nrpn path, got %r"
           % d.nrpnDataEntry)
-    check(d.members == 5 and d.bendRange == 24,
+    check(d.members == 5 and d.mpeBendRange[1] == 24,
           "R2: data entry after RPN Null changed an MPE setting")
 
-    # an unsupported upper zone configuration on channel 16 is consumed, not applied
+    # an upper zone configuration message on channel 16 must not resize the lower zone.
+    # With a zone that covers channel 16 it is consumed; R6 makes the case where it is
+    # OUTSIDE the zone an explicitly documented limitation, tested in scenario R6.
     d2 = Decoder([Timbre(4)], mpeInst=1, master=0, members=15)
     d2.midiEventReceived("control_change", 15, 101, 0)
     d2.midiEventReceived("control_change", 15, 100, 6)
     d2.midiEventReceived("control_change", 15, 6, 7)
     check(d2.members == 15,
-          "R2: an upper zone configuration message changed the lower zone")
+          "R2: an upper zone configuration message resized the lower zone")
     check(not d2.arpTouched and not d2.nrpnDataEntry,
-          "R2: an upper zone configuration message leaked into the patch")
+          "R2: an upper zone configuration message inside the zone leaked into the patch")
 
     # with MPE off nothing is consumed: ordinary routing is unchanged
     t3 = Timbre(4)
@@ -1168,6 +1239,173 @@ def scenario_R4():
           "R4: moving the manager channel kept the member expression")
 
 
+# --- R5 --------------------------------------------------------------------
+def scenario_R5():
+    """MPE 1.1 keeps Manager and Member pitch bend sensitivity separate.
+
+    The exact sequence the re-review asked for: Manager RPN 0 = 2, then Member
+    RPN 0 = 48. Member Glide must use 48, not 2.
+    """
+    t, d = setup(bendRange=48)
+    manager = 0
+    member = 1
+
+    d.midiEventReceived("control_change", manager, 101, 0)
+    d.midiEventReceived("control_change", manager, 100, 0)
+    d.midiEventReceived("control_change", manager, 6, 2)      # Manager RPN0 = 2
+    check(d.mpeBendRange[manager] == 2,
+          "R5: manager RPN 0 did not set the manager range, got %r"
+          % d.mpeBendRange[manager])
+    check(d.mpeBendRange[member] != 2,
+          "R5: manager RPN 0 overwrote the member bend range")
+
+    d.midiEventReceived("control_change", member, 101, 0)
+    d.midiEventReceived("control_change", member, 100, 0)
+    d.midiEventReceived("control_change", member, 6, 48)      # Member RPN0 = 48
+    check(d.mpeBendRange[member] == 48,
+          "R5: member RPN 0 did not set the member range, got %r"
+          % d.mpeBendRange[member])
+    check(d.mpeBendRange[manager] == 2,
+          "R5: member RPN 0 overwrote the manager range")
+
+    d.midiEventReceived("note_on", member, 60, 100)
+    d.midiEventReceived("pitchwheel", member, 1.0)
+    v = voice_of(d, member)
+    # 48 semitones full bend == 24.0 freqHarm units; 2 semitones would be 1.0
+    check(near(t.voices[v].mpeFreqOffset, 24.0),
+          "R5: member Glide used %r freqHarm units; with the manager's 2 semitones it "
+          "would be 1.0, with the member's 48 it must be 24.0"
+          % t.voices[v].mpeFreqOffset)
+
+    # each member channel keeps its own range
+    d.midiEventReceived("control_change", 2, 101, 0)
+    d.midiEventReceived("control_change", 2, 100, 0)
+    d.midiEventReceived("control_change", 2, 6, 12)
+    d.midiEventReceived("note_on", 2, 64, 100)
+    d.midiEventReceived("pitchwheel", 2, 1.0)
+    v2 = voice_of(d, 2)
+    check(near(t.voices[v2].mpeFreqOffset, 6.0),
+          "R5: a second member channel did not use its own 12 semitone range")
+    check(near(t.voices[v].mpeFreqOffset, 24.0),
+          "R5: setting one member's range changed another member's")
+
+    # MPE 1.1: a configuration message restores manager 2 and every member 48
+    d2 = Decoder([Timbre(6)], mpeInst=1, master=0, members=15, bendRange=12)
+    d2.midiEventReceived("control_change", 0, 101, 0)
+    d2.midiEventReceived("control_change", 0, 100, 6)
+    d2.midiEventReceived("control_change", 0, 6, 5)
+    check(d2.mpeBendRange[0] == 2,
+          "R5: the configuration message did not restore the 2 semitone manager range")
+    check(all(d2.mpeBendRange[c] == 48 for c in range(1, 6)),
+          "R5: the configuration message did not restore the 48 semitone member range")
+
+    # 0..96 is the range MPE 1.1 allows
+    d3 = Decoder([Timbre(4)], mpeInst=1, master=0, members=15)
+    d3.midiEventReceived("control_change", 1, 101, 0)
+    d3.midiEventReceived("control_change", 1, 100, 0)
+    d3.midiEventReceived("control_change", 1, 6, 96)
+    check(d3.mpeBendRange[1] == 96, "R5: 96 semitones was not accepted")
+
+
+# --- R6 --------------------------------------------------------------------
+def scenario_R6():
+    """RPN must only be intercepted on channels of the configured zone.
+
+    The exact sequence the re-review asked for: lower zone, manager 1, 4 members,
+    an ordinary timbre on channel 10, CC100/CC101 on channel 10.
+    """
+    mpe = Timbre(4)
+    other = Timbre(4)
+    d = Decoder([mpe, other], mpeInst=1, master=0, members=4,
+                timbreChannel=[1, 10, 3, 4])
+    check(not d.isMpeMemberChannel(9) and not d.isMpeManagerChannel(9),
+          "R6: channel 10 must be outside a 4 member lower zone")
+
+    d.midiEventReceived("control_change", 9, 101, 3)
+    d.midiEventReceived("control_change", 9, 100, 7)
+    check(d.arpTouched == [(101, 3), (100, 7)],
+          "R6: CC100/CC101 outside the zone were swallowed instead of keeping their "
+          "ordinary preenfm2 meaning, got %r" % d.arpTouched)
+    check(d.mpeRpnMsb[9] == 0x7F and d.mpeRpnLsb[9] == 0x7F,
+          "R6: an out of zone channel entered the MPE RPN state")
+    check(all(kind == "control_change" and targets == (1,)
+              for kind, _, _, _, targets in d.ordinaryTimbres),
+          "R6: the out of zone control changes did not reach the ordinary timbre")
+
+    # data entry outside the zone still reaches the nrpn path
+    d.midiEventReceived("control_change", 9, 6, 42)
+    d.midiEventReceived("control_change", 9, 38, 7)
+    check(d.nrpnDataEntry == [(6, 42), (38, 7)],
+          "R6: CC6/CC38 outside the zone were swallowed, got %r" % d.nrpnDataEntry)
+
+    # and inside the zone RPN is still consumed
+    d.midiEventReceived("control_change", 0, 101, 0)
+    d.midiEventReceived("control_change", 0, 100, 6)
+    before = list(d.arpTouched)
+    check(d.arpTouched == before and d.mpeRpnLsb[0] == 6,
+          "R6: RPN on the manager channel is no longer consumed")
+
+
+# --- R7 --------------------------------------------------------------------
+def scenario_R7():
+    """A member count change is a zone configuration change.
+
+    The exact sequence the re-review asked for: 15 members, expression on channel
+    16, shrink to 4, expand to 15, new channel 16 note.
+    """
+    t, d = setup(members=15)
+    ch16 = 15
+    d.midiEventReceived("note_on", ch16, 60, 100)
+    d.midiEventReceived("aftertouch", ch16, 127)
+    d.midiEventReceived("control_change", ch16, 74, 127)
+    d.midiEventReceived("pitchwheel", ch16, 1.0)
+    check(d.mpePressureSeen[ch16], "R7: setup failed, no expression was recorded")
+
+    d.members = 4                      # menu change
+    d.getMpeTimbre()
+    check(not d.isMpeMemberChannel(ch16), "R7: channel 16 is still inside a 4 member zone")
+    check(all(v == -1 for v in t.mpeVoiceOfChannel_),
+          "R7: shrinking the zone kept the member channel ownership")
+    check(not d.mpePressureSeen[ch16] and not d.mpeSlideSeen[ch16],
+          "R7: shrinking the zone kept the member expression validity")
+    check(d.mpePressure[ch16] == 0.0 and d.mpeSlide[ch16] == 0.0
+          and d.mpeBend[ch16] == 0.0,
+          "R7: shrinking the zone kept the member expression values")
+
+    d.members = 15                     # expand again
+    d.getMpeTimbre()
+    d.midiEventReceived("note_on", ch16, 67, 100)
+    v = voice_of(d, ch16)
+    check(v >= 0, "R7: channel 16 got no voice after the zone was restored")
+    check(near(t.voices[v].aftertouch, t.lastChannelAfterTouch_),
+          "R7: the new note inherited the old pressure")
+    check(near(t.voices[v].slide, t.lastSlide_), "R7: the new note inherited the old slide")
+    check(near(t.voices[v].mpeFreqOffset, 0.0), "R7: the new note inherited the old bend")
+
+    # the same through RPN 6 rather than the menu
+    t2, d2 = setup(members=15)
+    d2.midiEventReceived("note_on", ch16, 60, 100)
+    d2.midiEventReceived("aftertouch", ch16, 127)
+    d2.midiEventReceived("control_change", 0, 101, 0)
+    d2.midiEventReceived("control_change", 0, 100, 6)
+    d2.midiEventReceived("control_change", 0, 6, 4)
+    check(d2.members == 4, "R7: RPN 6 did not resize the zone")
+    check(not d2.mpePressureSeen[ch16],
+          "R7: an RPN 6 resize kept the previous zone's member expression")
+    check(all(v == -1 for v in t2.mpeVoiceOfChannel_),
+          "R7: an RPN 6 resize kept the previous zone's ownership")
+
+    # a bend setting change counts as a zone change too
+    t3, d3 = setup(members=15)
+    d3.midiEventReceived("aftertouch", 3, 100)
+    d3.bendRange = 12
+    d3.getMpeTimbre()
+    check(not d3.mpePressureSeen[3],
+          "R7: changing the bend setting did not resynchronise the zone")
+    check(d3.mpeBendRange[3] == 12,
+          "R7: the new bend setting was not seeded into the member ranges")
+
+
 def main():
     test_no_new_matrix_source()
     test_polyat_contract_intact()
@@ -1193,7 +1431,10 @@ def main():
             ("R1 manager channel targets the MPE timbre", scenario_R1),
             ("R2 RPN cannot reach arp / nrpn / patch", scenario_R2),
             ("R3 unseen member value keeps the baseline", scenario_R3),
-            ("R4 every reset path clears MPE state", scenario_R4)):
+            ("R4 every reset path clears MPE state", scenario_R4),
+            ("R5 manager and member bend ranges are distinct", scenario_R5),
+            ("R6 RPN only inside the configured zone", scenario_R6),
+            ("R7 member count change resynchronises the zone", scenario_R7)):
         before = len(failures)
         fn()
         print("  scenario %-42s %s"
