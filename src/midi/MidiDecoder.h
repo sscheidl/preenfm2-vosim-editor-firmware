@@ -211,6 +211,8 @@ public:
     bool mpeConsumeRpn(MidiEvent& midiEvent);
     void mpeForgetChannelState(uint8_t channel);
     void mpeForgetAllChannelState();
+    void mpeResetBendRanges();
+    void mpeSyncZoneConfig();
     void controlChange(int timbre, MidiEvent& midiEvent);
     void decodeNrpn(int timbre);
     void setSynth(Synth* synth);
@@ -285,10 +287,18 @@ private:
     // RPN Null, i.e. nothing selected.
     uint8_t mpeRpnMsb[16];
     uint8_t mpeRpnLsb[16];
-    // R4. Detects an MPE configuration change so the state above can be dropped without
-    // needing a hook in the menu.
+    // R5. Pitch bend sensitivity is per channel, as MPE 1.1 defines it: RPN 0 on the
+    // manager channel sets the manager range, RPN 0 on a member channel sets that
+    // member channel's range. One shared value let a manager RPN 0 of 2 semitones
+    // silently become the member Glide range.
+    uint8_t mpeBendRange[16];
+    // R4 / R7. Detects an MPE zone configuration change so the state above can be
+    // dropped without needing a hook in the menu code. The member count and the bend
+    // setting are part of the zone, so a change to either counts.
     int mpeLastTimbre;
     int mpeLastManager;
+    int mpeLastMembers;
+    int mpeLastBend;
     unsigned char runningStatus;
 
     // Midi Clock

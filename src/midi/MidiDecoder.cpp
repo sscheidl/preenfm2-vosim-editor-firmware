@@ -51,9 +51,24 @@ MidiDecoder::MidiDecoder() {
     usbBufRead = usbBuf;
     usbBufWrite = usbBuf;
     sysexIndex = 0;
+    // mpeSyncZoneConfig() reaches through this pointer, and setSynth() only runs later.
+    this->synth = 0;
+    // RPN selection is sticky in midi : it survives notes and resets, and is only
+    // replaced by the next CC 101/100 pair. Clearing it inside a reset would also
+    // break an MPE configuration message, whose data entry lsb arrives after the
+    // member count has already changed the zone. So it is initialised once, here.
+    for (int c = 0; c < 16; c++) {
+        mpeRpnMsb[c] = 0x7F;
+        mpeRpnLsb[c] = 0x7F;
+    }
     mpeLastTimbre = -1;
     mpeLastManager = -1;
+    mpeLastMembers = -1;
+    mpeLastBend = -1;
     mpeForgetAllChannelState();
+    for (int c = 0; c < 16; c++) {
+        mpeBendRange[c] = 48;
+    }
 
     for (int k=0; k<64; k++) {
         usbBuf[k] = 0;
@@ -220,7 +235,14 @@ void MidiDecoder::midiEventReceived(MidiEvent midiEvent) {
         // R2. RPN belongs to the zone, and CC 100/101 are CC_ARP_CLOCK and
         // CC_ARP_DIRECTION in this firmware while CC 6/38 are the nrpn data entry
         // bytes. A configuration message must never reach either of them.
-        if (midiEvent.eventType == MIDI_CONTROL_CHANGE && mpeConsumeRpn(midiEvent)) {
+        // R6. Only channels of the configured zone. A channel outside it is an
+        // ordinary preenfm2 channel and keeps its existing meaning for these control
+        // changes, so an upper zone configuration message on a channel we do not own
+        // is NOT swallowed - see the limitation in the report.
+        if (midiEvent.eventType == MIDI_CONTROL_CHANGE
+                && (isMpeManagerChannel(midiEvent.channel)
+                    || isMpeMemberChannel(midiEvent.channel))
+                && mpeConsumeRpn(midiEvent)) {
             return;
         }
         // A member channel is per voice expression for the MPE timbre.
@@ -347,17 +369,53 @@ void MidiDecoder::midiEventReceived(MidiEvent midiEvent) {
 int MidiDecoder::getMpeTimbre() {
     int instrument = this->synthState->fullState.midiConfigValue[MIDICONFIG_MPE_INST];
     int timbre = (instrument == 0) ? -1 : (instrument - 1);
-    int manager = this->synthState->fullState.midiConfigValue[MIDICONFIG_MPE_MASTER];
-    // R4. Switching MPE off, moving it to another timbre or moving the zone must not
-    // leave expression behind that a later member note on could pick up. Detecting it
-    // here avoids a hook in the menu code for a setting that is read on every event
-    // anyway.
-    if (unlikely(timbre != mpeLastTimbre || manager != mpeLastManager)) {
+    // R4 / R7. Switching MPE off, moving it to another timbre, moving the zone or
+    // resizing it must not leave expression, ownership or a negotiated bend range
+    // behind that a later member note on could pick up. Detecting it here avoids a
+    // hook in the menu code for settings that are read on every event anyway, and it
+    // catches a change from the menu and from an RPN alike.
+    if (unlikely(timbre != mpeLastTimbre
+            || this->synthState->fullState.midiConfigValue[MIDICONFIG_MPE_MASTER] != mpeLastManager
+            || this->synthState->fullState.midiConfigValue[MIDICONFIG_MPE_MEMBERS] != mpeLastMembers
+            || this->synthState->fullState.midiConfigValue[MIDICONFIG_MPE_BEND] != mpeLastBend)) {
         mpeLastTimbre = timbre;
-        mpeLastManager = manager;
-        mpeForgetAllChannelState();
+        mpeSyncZoneConfig();
     }
     return timbre;
+}
+
+// Take a fresh snapshot of the zone configuration and drop everything that belonged to
+// the previous one : decoder expression, RPN selection, negotiated bend ranges and the
+// member channel ownership held by the timbres.
+void MidiDecoder::mpeSyncZoneConfig() {
+    mpeLastManager = this->synthState->fullState.midiConfigValue[MIDICONFIG_MPE_MASTER];
+    mpeLastMembers = this->synthState->fullState.midiConfigValue[MIDICONFIG_MPE_MEMBERS];
+    mpeLastBend = this->synthState->fullState.midiConfigValue[MIDICONFIG_MPE_BEND];
+    mpeForgetAllChannelState();
+    mpeResetBendRanges();
+    if (likely(this->synth != 0)) {
+        for (int t = 0; t < NUMBER_OF_TIMBRES; t++) {
+            this->synth->getTimbre(t)->mpeForgetAllChannels();
+        }
+    }
+}
+
+// Back to the configured defaults. MPE 1.1 gives the manager channel 2 semitones; the
+// member channels use the value from the menu until a controller negotiates its own.
+void MidiDecoder::mpeResetBendRanges() {
+    int configured = this->synthState->fullState.midiConfigValue[MIDICONFIG_MPE_BEND];
+    if (configured < 0) {
+        configured = 0;
+    } else if (configured > 96) {
+        configured = 96;
+    }
+    for (int c = 0; c < 16; c++) {
+        mpeBendRange[c] = configured;
+    }
+    int manager = this->synthState->fullState.midiConfigValue[MIDICONFIG_MPE_MASTER];
+    if (manager >= 0 && manager < 16) {
+        mpeBendRange[manager] = 2;
+    }
 }
 
 bool MidiDecoder::isMpeManagerChannel(uint8_t channel) {
@@ -385,8 +443,6 @@ void MidiDecoder::mpeForgetChannelState(uint8_t channel) {
     mpeBend[channel] = 0.0f;
     mpePressureSeen[channel] = false;
     mpeSlideSeen[channel] = false;
-    mpeRpnMsb[channel] = 0x7F;
-    mpeRpnLsb[channel] = 0x7F;
 }
 
 void MidiDecoder::mpeForgetAllChannelState() {
@@ -396,8 +452,6 @@ void MidiDecoder::mpeForgetAllChannelState() {
         mpeBend[c] = 0.0f;
         mpePressureSeen[c] = false;
         mpeSlideSeen[c] = false;
-        mpeRpnMsb[c] = 0x7F;
-        mpeRpnLsb[c] = 0x7F;
     }
 }
 
@@ -435,31 +489,41 @@ bool MidiDecoder::mpeConsumeRpn(MidiEvent& midiEvent) {
     if (midiEvent.value[0] == 38) {
         return true;
     }
-    // Only the manager channel of the configured zone may change a setting. An RPN on
-    // any other channel - an upper zone configuration message on channel 16, for
-    // instance - is consumed and ignored, which is the whole point: it must not be
-    // able to edit the patch.
-    if (isMpeManagerChannel(channel)) {
-        if (mpeRpnMsb[channel] == 0) {
-            if (mpeRpnLsb[channel] == 0) {
-                // RPN 0 : pitch bend sensitivity, in semitones.
-                int semitones = midiEvent.value[1];
-                if (semitones > 48) {
-                    semitones = 48;
+    if (mpeRpnMsb[channel] == 0) {
+        if (mpeRpnLsb[channel] == 0) {
+            // R5. RPN 0, pitch bend sensitivity, 0..96 semitones. MPE 1.1 addresses it
+            // per channel : to the manager channel for the manager range, and to each
+            // member channel for that member channel's range. It is deliberately NOT
+            // one shared value, or a manager RPN 0 of 2 semitones would become the
+            // member Glide range.
+            int semitones = midiEvent.value[1];
+            if (semitones > 96) {
+                semitones = 96;
+            }
+            mpeBendRange[channel] = semitones;
+        } else if (mpeRpnLsb[channel] == 6 && isMpeManagerChannel(channel)) {
+            // RPN 6 : MPE configuration message, the member channel count. Only the
+            // manager channel of the zone may send it.
+            int members = midiEvent.value[1];
+            if (members >= 1) {
+                if (members > 15) {
+                    members = 15;
                 }
-                this->synthState->fullState.midiConfigValue[MIDICONFIG_MPE_BEND] = semitones;
-            } else if (mpeRpnLsb[channel] == 6) {
-                // RPN 6 : MPE configuration message, the member channel count.
-                int members = midiEvent.value[1];
-                // n == 0 means "deactivate the zone". It is consumed but deliberately
-                // not honoured: it would silently undo the user's MPE menu setting.
-                if (members >= 1) {
-                    if (members > 15) {
-                        members = 15;
+                this->synthState->fullState.midiConfigValue[MIDICONFIG_MPE_MEMBERS] = members;
+                // R7. The zone just changed shape, so take the snapshot and drop the
+                // previous zone's state here rather than one event later.
+                mpeSyncZoneConfig();
+                // MPE 1.1 : an MPE configuration message resets the manager channel
+                // pitch bend sensitivity to 2 semitones and every member channel to 48.
+                mpeBendRange[channel] = 2;
+                for (int c = 0; c < 16; c++) {
+                    if (isMpeMemberChannel(c)) {
+                        mpeBendRange[c] = 48;
                     }
-                    this->synthState->fullState.midiConfigValue[MIDICONFIG_MPE_MEMBERS] = members;
                 }
             }
+            // members == 0 deactivates the zone in MPE 1.1. It is consumed but not
+            // honoured; see the standards limitation in the report.
         }
     }
     return true;
@@ -468,7 +532,8 @@ bool MidiDecoder::mpeConsumeRpn(MidiEvent& midiEvent) {
 void MidiDecoder::mpeEventReceived(int timbre, MidiEvent& midiEvent) {
     Timbre* mpeTimbre = this->synth->getTimbre(timbre);
     uint8_t channel = midiEvent.channel;
-    int bendRange = this->synthState->fullState.midiConfigValue[MIDICONFIG_MPE_BEND];
+    // R5. Each member channel carries its own negotiated pitch bend sensitivity.
+    int bendRange = mpeBendRange[channel];
 
     switch (midiEvent.eventType) {
     case MIDI_NOTE_OFF:
