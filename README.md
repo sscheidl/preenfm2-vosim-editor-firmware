@@ -4,9 +4,9 @@
 >
 > This repository contains the PreenFM2 VOSIM firmware plus the editor remote-store protocol and true MIDI Polyphonic Key Pressure and Lower-Zone MPE. The source version is **3.10 alpha** (`Makefile`, shown on the boot screen as `preenfm2 v3.10 alpha`).
 >
-> **No 3.10 alpha binary has been built yet.** The only binaries in the repository (`release/editor-protocol-3.00alpha/`) and in the pre-release `v3.00alpha-full-mpe-rc1` are labelled **3.00 alpha**. The 3.00-alpha editor-protocol build has run successfully on a physical PreenFM2. The PolyAT/MPE code has passed source review and host-side simulations; the `v3.00alpha-full-mpe-rc1` pre-release is documented as built with GCC 4.7.4, but **PolyAT/MPE has not been validated on hardware**.
+> **3.10 alpha binaries are available as the pre-release [`v3.10alpha`](https://github.com/sscheidl/preenfm2-vosim-editor-firmware/releases/tag/v3.10alpha)**, built with GCC 4.7.4 from commit `f6fe06c`. They contain PolyAT and Lower-Zone MPE but have **not yet been validated on hardware**. The earlier `v3.00alpha-full-mpe-rc1` pre-release carries the same code labelled **3.00 alpha**. The only binaries in the repository itself (`release/editor-protocol-3.00alpha/`) are the older editor-protocol-only 3.00 alpha build without PolyAT/MPE, which has run successfully on a physical PreenFM2.
 >
-> Do not flash the GCC-13 cloud binaries. The next release gate is a clean local build of 3.10 alpha with `gcc-arm-none-eabi 4.7-2014q2` / GCC 4.7.4, followed by manual hardware validation.
+> Do not flash the GCC-13 cloud binaries. The build gate (clean local build of 3.10 alpha with `gcc-arm-none-eabi 4.7-2014q2` / GCC 4.7.4) is passed; the open gate is manual hardware validation.
 
 <p align="center">
   <img src="docs/PreenFM2_2026.png" alt="PreenFM2 test hardware running the 3.00 alpha firmware (photo of the earlier build)" width="900" />
@@ -16,7 +16,7 @@
 
 ## Current development status — 2026-10-02
 
-Default branch: `feature/editor-remote-store`, which contains `feature/full-mpe` (fast-forward, source commit `374be62f05ead717b1fa674abbd97a2deac643d8`, pre-release `v3.00alpha-full-mpe-rc1`) plus the version change to 3.10 alpha. Apart from the version string the source is identical to that release candidate.
+Default branch: `feature/editor-remote-store`, which contains `feature/full-mpe` (fast-forward, source commit `374be62f05ead717b1fa674abbd97a2deac643d8`, pre-release `v3.00alpha-full-mpe-rc1`) plus the version change to 3.10 alpha. Apart from the version string the source is identical to that release candidate. The 3.10 alpha binaries ([pre-release `v3.10alpha`](https://github.com/sscheidl/preenfm2-vosim-editor-firmware/releases/tag/v3.10alpha)) were built from commit `f6fe06c2677afe82b92c480f1671d79120b13c21`.
 
 Current state:
 
@@ -48,7 +48,7 @@ Hardware-test tools:
 
 ### Next gate
 
-The next step is deliberately **not more feature work**:
+The next step is deliberately **not more feature work**. Steps 1–5 are done for 3.10 alpha; the builds and their SHA-256 values are in the [`v3.10alpha` pre-release](https://github.com/sscheidl/preenfm2-vosim-editor-firmware/releases/tag/v3.10alpha). Steps 6 and 7 remain:
 
 1. check out the final `feature/full-mpe` source locally;
 2. build cleanly with the historical `gcc-arm-none-eabi 4.7-2014q2` / GCC 4.7.4 toolchain;
