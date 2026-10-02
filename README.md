@@ -1,12 +1,12 @@
 # PreenFM2 3.10 alpha firmware — VOSIM + editor protocol + PolyAT/MPE
 
-> ## ⚠ Experimental developer firmware — polyphonic aftertouch is hardware-confirmed, MPE hardware validation is still pending
+> ## ⚠ Experimental developer firmware — polyphonic aftertouch and per-note MPE pressure and pitch bend are hardware-confirmed
 >
 > This repository contains the PreenFM2 VOSIM firmware plus the editor remote-store protocol and true MIDI Polyphonic Key Pressure and Lower-Zone MPE. The source version is **3.10 alpha** (`Makefile`, shown on the boot screen as `preenfm2 v3.10 alpha`).
 >
-> **3.10 alpha binaries are available as the pre-release [`v3.10alpha`](https://github.com/sscheidl/preenfm2-vosim-editor-firmware/releases/tag/v3.10alpha)**, built with GCC 4.7.4 from commit `1107a62`. They contain PolyAT and Lower-Zone MPE. **Polyphonic aftertouch has been confirmed on a physical PreenFM2** (Kontrol S61 MK3 over USB, `PolyAT Init`); **Lower-Zone MPE has not yet been validated on hardware.** The USB-MIDI receive path used to drop polyphonic key pressure packets (CIN 0xA, also upstream); that is fixed in `1107a62`. The earlier `v3.00alpha-full-mpe-rc1` pre-release carries the pre-fix code labelled **3.00 alpha**. The only binaries in the repository itself (`release/editor-protocol-3.00alpha/`) are the older editor-protocol-only 3.00 alpha build without PolyAT/MPE, which has run successfully on a physical PreenFM2.
+> **3.10 alpha binaries are available as the pre-release [`v3.10alpha`](https://github.com/sscheidl/preenfm2-vosim-editor-firmware/releases/tag/v3.10alpha)**, built with GCC 4.7.4 from commit `1107a62`. They contain PolyAT and Lower-Zone MPE. **Polyphonic aftertouch has been confirmed on a physical PreenFM2** (Kontrol S61 MK3 over USB, `PolyAT Init`); **Lower-Zone MPE has been confirmed on a physical PreenFM2** with a ROLI LUMI Keys through Studio One 7 (per-note pressure and per-note pitch bend, presets `MPE ROLI` and `MPE LUMI`). Slide (CC74), sustain and pressure on the master channel, and a Seaboard are not covered by that test. The USB-MIDI receive path used to drop polyphonic key pressure packets (CIN 0xA, also upstream); that is fixed in `1107a62`. The earlier `v3.00alpha-full-mpe-rc1` pre-release carries the pre-fix code labelled **3.00 alpha**. The only binaries in the repository itself (`release/editor-protocol-3.00alpha/`) are the older editor-protocol-only 3.00 alpha build without PolyAT/MPE, which has run successfully on a physical PreenFM2.
 >
-> Do not flash the GCC-13 cloud binaries. The build gate (clean local build of 3.10 alpha with `gcc-arm-none-eabi 4.7-2014q2` / GCC 4.7.4) is passed; the open gate is hardware validation of Lower-Zone MPE.
+> Do not flash the GCC-13 cloud binaries. The build gate (clean local build of 3.10 alpha with `gcc-arm-none-eabi 4.7-2014q2` / GCC 4.7.4) is passed; the remaining gates are the MPE parts a LUMI Keys cannot produce (Slide, master-channel expression, the same note on two channels, a Seaboard).
 
 <p align="center">
   <img src="docs/PreenFM2_2026.png" alt="PreenFM2 test hardware running the 3.00 alpha firmware (photo of the earlier build)" width="900" />
@@ -45,11 +45,11 @@ Hardware-test tools:
 - `tools/polyat_test.py` — deterministic MIDI Polyphonic Key Pressure / Channel Pressure sender
 - `tools/midi_monitor.py` — MIDI input monitor to verify what the controller actually transmits
 - `tools/mpe_test.py` — deterministic Lower-Zone MPE sender for Press / Glide / Slide / sustain / voice-allocation scenarios
-- [`test/midi/`](test/midi/README.md) — Standard MIDI Files with the Lower-Zone MPE scenarios A–J for DAW playback, generated from `tools/mpe_test.py` (not yet verified in a DAW or on hardware)
+- [`test/midi/`](test/midi/README.md) — Standard MIDI Files with the Lower-Zone MPE scenarios A–J for DAW playback, generated from `tools/mpe_test.py` (played from Studio One 7 to a PreenFM2 with MPE active by the author)
 
 ### Next gate
 
-The next step is deliberately **not more feature work**. Steps 1–5 are done for 3.10 alpha; the builds and their SHA-256 values are in the [`v3.10alpha` pre-release](https://github.com/sscheidl/preenfm2-vosim-editor-firmware/releases/tag/v3.10alpha). Steps 6 and 7 remain:
+The next step is deliberately **not more feature work**. Steps 1–5 are done for 3.10 alpha; the builds and their SHA-256 values are in the [`v3.10alpha` pre-release](https://github.com/sscheidl/preenfm2-vosim-editor-firmware/releases/tag/v3.10alpha). Steps 6 and 7 are done for polyphonic aftertouch and for Lower-Zone MPE with a ROLI LUMI Keys; Slide, master-channel expression and a Seaboard are still open (step 7):
 
 1. check out the final `feature/full-mpe` source locally;
 2. build cleanly with the historical `gcc-arm-none-eabi 4.7-2014q2` / GCC 4.7.4 toolchain;

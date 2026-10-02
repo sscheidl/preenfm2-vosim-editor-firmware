@@ -40,8 +40,11 @@ the arpeggiator, so the zone is configured in the PreenFM2 menu. **No polyphonic
 ## Host setup and the channel check
 
 In Studio One, add the PreenFM2 as an external instrument and enable MPE / all channels if the
-device offers it. **Not verified:** how Studio One 7 treats per-event channels when a
-multi-channel file is imported and played to an external instrument. Play scenario **B**
+device offers it. **Reported by the author:** with `MPE aktivieren` enabled on the PreenFM2 device in
+Studio One (Options > External Devices) and `MPE inst:` active on the PreenFM2, the file
+plays through and per-channel CC74 moves the pan. Without MPE on that device, Studio One
+converted live MPE input from a controller to polyphonic pressure on one channel, and no
+pitch bend appeared on the output in the author's monitor. Play scenario **B**
 (bar 7) first: two notes sound, only one of them jumps up an octave, later only the other one
 down a fifth. If both move together or neither does, channels are being lost: use the
 per-channel file with each track set to its own channel, or send the scenarios directly:
@@ -78,5 +81,6 @@ covered with these files.
 
 Checked by an independent parser: raw bytes identical to `tools/mpe_test.py`, only the
 message types listed above, CC64 only on the master channel, no note on the master channel,
-no hanging note, pedal up at the end, both files equal in content. **Not verified:** playback
-in Studio One 7 or on a PreenFM2.
+no hanging note, pedal up at the end, both files equal in content. Playback from
+Studio One 7 to a PreenFM2 with MPE active has been confirmed by the author (channels arrive,
+per-channel CC74 moves the pan); not every scenario has been evaluated one by one.
