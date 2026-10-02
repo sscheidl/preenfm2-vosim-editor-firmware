@@ -45,6 +45,7 @@ Hardware-test tools:
 - `tools/polyat_test.py` — deterministic MIDI Polyphonic Key Pressure / Channel Pressure sender
 - `tools/midi_monitor.py` — MIDI input monitor to verify what the controller actually transmits
 - `tools/mpe_test.py` — deterministic Lower-Zone MPE sender for Press / Glide / Slide / sustain / voice-allocation scenarios
+- [`test/midi/`](test/midi/README.md) — Standard MIDI Files with the Lower-Zone MPE scenarios A–J for DAW playback, generated from `tools/mpe_test.py` (not yet verified in a DAW or on hardware)
 
 ### Next gate
 

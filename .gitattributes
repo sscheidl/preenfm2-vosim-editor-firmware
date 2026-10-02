@@ -3,3 +3,6 @@
 release/editor-protocol-3.00alpha/*.patch -text
 release/editor-protocol-3.00alpha/SHA256SUMS -text
 release/editor-protocol-3.00alpha/*_symbol.txt -text
+
+# Test MIDI files must stay byte identical to what make_mpe_test_midi.py generates.
+test/midi/*.mid -text
