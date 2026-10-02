@@ -1,7 +1,7 @@
 # File name component, must not contain spaces: it ends up in build paths.
-PFM2_VERSION_NUMBER=3.00alpha
+PFM2_VERSION_NUMBER=3.10alpha
 # What the firmware displays. May contain spaces.
-PFM2_VERSION_DISPLAY=3.00 alpha
+PFM2_VERSION_DISPLAY=3.10 alpha
 # Single quoted so the shell hands the compiler one argument, spaces included.
 PFM2_VERSION:='"${PFM2_VERSION_DISPLAY}"'
 
