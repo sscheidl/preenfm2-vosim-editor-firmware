@@ -236,6 +236,9 @@ static uint8_t usbd_midi_DataOut(void *pdev, uint8_t epnum) {
 			// ========= 3 bytes =======================
 			case 0x9:
 			case 0x8:
+			// Polyphonic key pressure. Without this label the packet was dropped and
+			// polyphonic aftertouch never reached the MIDI decoder over USB.
+			case 0xa:
 			case 0xb:
 			case 0xe:
 			case 0x3:
