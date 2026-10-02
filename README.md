@@ -1,36 +1,27 @@
-# PreenFM2 3.00 alpha firmware — VOSIM + editor protocol + PolyAT/MPE development
+# PreenFM2 3.10 alpha firmware — VOSIM + editor protocol + PolyAT/MPE
 
 > ## ⚠ Experimental developer firmware — hardware validation of the new expression work is still pending
 >
-> This repository contains the PreenFM2 3.00-alpha VOSIM firmware plus the editor remote-store protocol and the current development work for true MIDI Polyphonic Key Pressure and Lower-Zone MPE.
+> This repository contains the PreenFM2 VOSIM firmware plus the editor remote-store protocol and true MIDI Polyphonic Key Pressure and Lower-Zone MPE. The source version is **3.10 alpha** (`Makefile`, shown on the boot screen as `preenfm2 v3.10 alpha`).
 >
-> The existing 3.00-alpha editor-protocol build has already run successfully on a physical PreenFM2. The newer PolyAT/MPE branch has passed source review, host-side simulations and comparative cloud compile/link checks, but **has not yet been built with the historical release toolchain or flashed to hardware**.
+> **No 3.10 alpha binary has been built yet.** The only binaries in the repository (`release/editor-protocol-3.00alpha/`) and in the pre-release `v3.00alpha-full-mpe-rc1` are labelled **3.00 alpha**. The 3.00-alpha editor-protocol build has run successfully on a physical PreenFM2. The PolyAT/MPE code has passed source review and host-side simulations; the `v3.00alpha-full-mpe-rc1` pre-release is documented as built with GCC 4.7.4, but **PolyAT/MPE has not been validated on hardware**.
 >
-> Do not flash the GCC-13 cloud binaries. The next release gate is a clean local build with `gcc-arm-none-eabi 4.7-2014q2` / GCC 4.7.4, followed by manual hardware validation.
+> Do not flash the GCC-13 cloud binaries. The next release gate is a clean local build of 3.10 alpha with `gcc-arm-none-eabi 4.7-2014q2` / GCC 4.7.4, followed by manual hardware validation.
 
 <p align="center">
-  <img src="docs/PreenFM2_2026.png" alt="PreenFM2 test hardware running the 3.00 alpha firmware" width="900" />
+  <img src="docs/PreenFM2_2026.png" alt="PreenFM2 test hardware running the 3.00 alpha firmware (photo of the earlier build)" width="900" />
 </p>
 
 ---
 
-## Current development status — 2026-09-08
+## Current development status — 2026-10-02
 
-Current development branch:
-
-```text
-feature/full-mpe
-```
-
-Last source-reviewed firmware checkpoint before this documentation-only cleanup:
-
-```text
-4655c10efcf4eb3343984941403511ae7bbe6b6b
-```
+Default branch: `feature/editor-remote-store`, which contains `feature/full-mpe` (fast-forward, source commit `374be62f05ead717b1fa674abbd97a2deac643d8`, pre-release `v3.00alpha-full-mpe-rc1`) plus the version change to 3.10 alpha. Apart from the version string the source is identical to that release candidate.
 
 Current state:
 
-- **3.00 Alpha / VOSIM / editor remote protocol:** retained.
+- **VOSIM / editor remote protocol (3.00 alpha base):** retained.
+- **Version 3.10 alpha:** the minor bump marks the PolyAT and Lower-Zone MPE work on top of the 3.00 alpha editor-protocol base.
 - **True MIDI Polyphonic Key Pressure:** implemented and independently source-reviewed. Existing `AftT` matrix routes become note-local when MIDI Polyphonic Key Pressure is received; ordinary Channel Pressure keeps the timbre-wide behaviour.
 - **Lower-Zone MPE:** implemented for the intended ROLI workflow:
   - Strike → Note-On velocity
@@ -87,8 +78,8 @@ The current development branch additionally carries the PolyAT and Lower-Zone MP
 | VOSIM base commit | `6ed604a43636c00bfbac9613c8f5a79a7582dfa7` |
 | editor-protocol baseline branch | `feature/editor-remote-store` |
 | reviewed PolyAT checkpoint | `feature/true-poly-aftertouch` @ `f503e7fd34c1df887e421f782520275a7b807632` |
-| current development branch | `feature/full-mpe` |
-| firmware version family | `3.00 alpha` (pre-release; original base was `2.21b`) |
+| PolyAT/MPE branch (merged into the default branch) | `feature/full-mpe` @ `374be62f05ead717b1fa674abbd97a2deac643d8` |
+| firmware version | `3.10 alpha` (pre-release; the editor-protocol build was `3.00 alpha`, original base was `2.21b`) |
 
 Remotes are set up as:
 
@@ -113,7 +104,7 @@ The editor extension uses NRPN page 4, which older firmware silently ignores:
 | 4 / 1 | current-position query |
 | 4 / 2 | store current edit buffer to a bank/preset target |
 
-Responses use page 4, LSB 64 and above, with explicit status codes. The protocol specification and the already prepared 3.00-alpha editor-protocol build are in [`release/editor-protocol-3.00alpha/`](release/editor-protocol-3.00alpha/).
+Responses use page 4, LSB 64 and above, with explicit status codes. The protocol specification and the earlier editor-protocol-only build are in [`release/editor-protocol-3.00alpha/`](release/editor-protocol-3.00alpha/). That directory is **historical**: it holds the hardware-tested 3.00 alpha binaries *without* PolyAT/MPE, and its `SHA256SUMS` belong to those files only. It is not updated for 3.10 alpha.
 
 [PreenFM+ 4.0.4](https://github.com/sscheidl/preenfm2-Editor) implements capability detection, position query, guarded Store and status reporting. On the device, `Receives:` must include NRPN for those requests.
 
@@ -157,9 +148,9 @@ These checks complement — and never replace — the historical-toolchain build
 
 ## Authors and license
 
-The PreenFM2 firmware is the work of **Xavier Hosxe**. The VOSIM branch used as the base is maintained by **pvig**. The tAUREON 3.00-alpha editor protocol, PolyAT and MPE development in this repository were produced through human-directed development with AI assistance.
+The PreenFM2 firmware is the work of **Xavier Hosxe**. The VOSIM branch used as the base is maintained by **pvig**. The tAUREON editor protocol (3.00 alpha), PolyAT and MPE (3.10 alpha) development in this repository were produced through human-directed development with AI assistance.
 
-The boot screen for the 3.00-alpha line credits `By Hosxe & tAUREON`.
+The boot screen for the 3.x alpha line credits `By Hosxe & tAUREON`.
 
 GPL, as upstream. Original source-file copyright and GPL headers remain intact; the USB manufacturer string continues to identify the device as Xavier Hosxe's design.
 
